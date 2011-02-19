@@ -1,5 +1,5 @@
 <?php
-    set_time_limit(0);
+	set_time_limit(0);
     ini_set('memory_limit', '512M');
 	
 	$status = array(
@@ -25,7 +25,7 @@
 		return $result;
 	}
 	
-	
+	const LIMIT_COUNT = 1000;
 	function get_limit_query($query, $sql_handle)
 	{
 		global $last_limit_query, $last_limit_value;
@@ -35,9 +35,9 @@
 			$last_limit_query = $query;
 		}
 		$start = $last_limit_value;
-		$finish = $start + 1000;
+		$finish = $start + LIMIT_COUNT;
 		$last_limit_value = $finish;
-		$count = 2;
+		$count = LIMIT_COUNT;
 		$sql_result = mysql_query($query." LIMIT ".$start.",".$count, $sql_handle);
 		return $sql_result;
 		
@@ -154,6 +154,7 @@
     if(!check_url($site_path))
 		return "BAD_SITEPATH";
 
+
     $sql_from = mysql_connect($params['from_mysql_host'], $params['from_mysql_login'],$params['from_mysql_password']);
     $sql_to = mysql_connect($params['to_mysql_host'], $params['to_mysql_login'],$params['to_mysql_password']);
 
@@ -170,9 +171,11 @@
 
     mysql_query("SET NAMES UTF8", $sql_from) or die(mysql_error());
     mysql_query("SET NAMES UTF8", $sql_to) or die(mysql_error());
+	
 
     include "install.php";
     install($sql_to, $lb_dbname, $lb_prefix);
+
    
     //groups
     $groups_count = 0;
@@ -221,6 +224,7 @@
 		", $sql_to) or die(mysql_error());
 		$users_id[$item['user_id']] = mysql_insert_id();
 	}
+	
 
     //categories
         mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
@@ -239,7 +243,7 @@
         ", $sql_to) or die(mysql_error());
         $categories_id[$category['cat_id']] = mysql_insert_id();
     }
-
+	
     //forums
 
     while(true)
@@ -305,7 +309,6 @@
         ", $sql_to) or die(mysql_error());
     }
 
-    
     //topics
 	$user_topics = array();
 	
@@ -340,13 +343,11 @@
 		$user_topics[$member_id_open] = (isset($user_topics[$member_id_open])) ? $user_topics[$member_id_open]+ 1 : 1;
         $topics_id[$topic['topic_id']] = mysql_insert_id();
 		}
-	}
-	
+	}	
     mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
 	foreach($user_topics as $user_id=>$count)
 		mysql_query("UPDATE ".$lb_prefix."_members SET topics_num = '".$count."' WHERE member_id='".$user_id."'", $sql_to) or die(mysql_error());
 
-          echo "4<br>";
     //posts
 	while(true)
 	{
@@ -463,7 +464,6 @@
             ", $sql_to) or die(mysql_error());
         }
     }
-    
     //polls
         mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
     $sql_result = mysql_query("SELECT * FROM ".$tws_prefix."_poll", $sql_from) or die(mysql_error());
@@ -765,7 +765,6 @@ mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
 	return "NO_ERROR";
 }
 	
-	
 ?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
@@ -926,7 +925,7 @@ mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
             <input type="text" name="to_db_prefix"/>
         </div>
          <div class="option_item">
-            <label>Адрес сайта</label>
+            <label>Адрес форума</label>
             <input type="text" name="to_site_path"/>
         </div>
     </div>

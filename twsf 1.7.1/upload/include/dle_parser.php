@@ -340,6 +340,7 @@ class ParseFilter {
 	function decodeBBCodes($txt, $use_html = TRUE, $wysiwig = "no") {
 		
 		global $config;
+
 		
 		$find = array ();
 		$result = array ();
@@ -413,6 +414,7 @@ class ParseFilter {
 			$txt = preg_replace( "#<!--fontstart:(.+?)-->#", "", $txt );
 		
 		}
+		
 
 		$txt = preg_replace( "#<!--smile:(.+?)-->(.+?)<!--/smile-->#is", ':\\1:', $txt );
         global $config;
@@ -432,7 +434,7 @@ class ParseFilter {
 			$txt = str_replace( "<BR>", "\n", $txt );
 			$txt = str_replace( "<BR />", "\n", $txt );
 		}
-		
+
 		if (!$this->safe_mode) $txt = htmlspecialchars( $txt, ENT_QUOTES );
 		if( $wysiwig != "yes" ) $txt = preg_replace( "#\[code\](.+?)\[/code\]#ies", "\$this->decode_code('\\1', '{$use_html}')", $txt );
 

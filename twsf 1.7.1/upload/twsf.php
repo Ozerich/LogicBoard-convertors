@@ -89,7 +89,7 @@
 	
 	function translit($str) 
 	{
-    $tr = array(
+        $tr = array(
         "А"=>"A","Б"=>"B","В"=>"V","Г"=>"G",
         "Д"=>"D","Е"=>"E","Ж"=>"J","З"=>"Z","И"=>"I",
         "Й"=>"Y","К"=>"K","Л"=>"L","М"=>"M","Н"=>"N",
@@ -103,8 +103,8 @@
         "с"=>"s","т"=>"t","у"=>"u","ф"=>"f","х"=>"h",
         "ц"=>"ts","ч"=>"ch","ш"=>"sh","щ"=>"sch","ъ"=>"y",
         "ы"=>"yi","ь"=>"","э"=>"e","ю"=>"yu","я"=>"ya"
-    );
-    return str_replace(" ","-",strtr($str,$tr));
+        );
+        return str_replace(" ","-",strtr($str,$tr));
 	}
 
     function get_forum_permissions($forum_id, $group_id, $type)
@@ -169,12 +169,10 @@
     if(mysql_select_db($params['to_db_name'], $sql_to) == FALSE)return "TO_DB_NOFOUND";
 
     mysql_query("SET NAMES UTF8", $sql_from) or die(mysql_error());
-    mysql_query("SET NAMES UTF8", $sql_to);
+    mysql_query("SET NAMES UTF8", $sql_to) or die(mysql_error());
 
-echo "Before install<br>";
-     include "install.php";
-     install($sql_to, $lb_dbname, $lb_prefix);
- echo "After install<br>";
+    include "install.php";
+    install($sql_to, $lb_dbname, $lb_prefix);
    
     //groups
     $groups_count = 0;
@@ -182,19 +180,15 @@ echo "Before install<br>";
 	$sql_result = mysql_query("SELECT * FROM ".$dle_prefix."_usergroups ORDER by id ASC", $sql_from) or die(mysql_error());
 	$result = fetch_array($sql_result);
 
-        echo "1.1<br>";
-        
     mysql_select_db($lb_dbname, $sql_to);
 	for($i = 0, $id = 1; $i < 5; $i++, $groups_count++)
 		mysql_query("INSERT INTO ".$lb_prefix."_groups SET g_id='".($id++)."', g_title='".mysql_escape_string($result[$i]['group_name'])."'",$sql_to);
-	echo "1.2<br>";
     mysql_query("INSERT INTO ".$lb_prefix."_groups SET g_id='6', g_title='Неактивные'", $sql_to);
-	echo "1.3<br>";
     for($i = 5, $id = 7, $groups_count = 6; $i < count($result); $i++,$groups_count++)
 		mysql_query("INSERT INTO ".$lb_prefix."_groups SET g_id='".($id++)."', g_title='".mysql_escape_string($result[$i]['group_name'])."'", $sql_to);
-	echo "1.4<br>";
     mysql_query("UPDATE ".$lb_prefix."_groups SET g_access_cc='1',g_supermoders='1' WHERE g_id='1'", $sql_to);
-           echo "1.5<br>";
+
+
     //users
     mysql_select_db($params['from_db_name'], $sql_from) or die(mysql_error());
     $sql_result = mysql_query("SELECT * FROM ".$dle_prefix."_users",$sql_from) or die(mysql_error());
@@ -228,8 +222,6 @@ echo "Before install<br>";
 		$users_id[$item['user_id']] = mysql_insert_id();
 	}
 
-        echo "1<br>";
-
     //categories
         mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
     $sql_result = mysql_query("SELECT * FROM ".$tws_prefix."_categories", $sql_from) or die(mysql_error());
@@ -247,58 +239,62 @@ echo "Before install<br>";
         ", $sql_to) or die(mysql_error());
         $categories_id[$category['cat_id']] = mysql_insert_id();
     }
-          echo "2<br>";
-    //forums
-        mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
-    $sql_result = mysql_query("SELECT * FROM ".$tws_prefix."_forums", $sql_from) or die(mysql_error());
-	$forums = fetch_array($sql_result);
-    
-   	foreach($forums as $forum)
-    {
-        $permissions = array();
-        for($i = 1; $i <= $groups_count; ++$i)
-        {
-            $group_id = ($i <= 5) ? $i : ($i + 1);
-            $permissions[$i]['read_forum'] = get_forum_permissions($forum['forum_id'], $group_id, 'auth_view');
-            $permissions[$i]['read_theme'] = get_forum_permissions($forum['forum_id'],$group_id, 'auth_read');
-            $permissions[$i]['creat_theme'] = get_forum_permissions($forum['forum_id'],$group_id, 'auth_post');
-            $permissions[$i]['answer_theme'] = get_forum_permissions($forum['forum_id'],$group_id, 'auth_reply');
-            $permissions[$i]['upload_files'] = get_forum_permissions($forum['forum_id'],$group_id, 'auth_sendfile');
-            $permissions[$i]['download_files'] = get_forum_permissions($forum['forum_id'],$group_id, 'auth_getfile');
-        }
-        $permissions[6] = $permissions[5];
-        if($forum['forum_status'] == 'hidden')
-        {
-            foreach($permissions as $p_ind=>$permissions_item)
-                foreach($permissions_item as $key=>$val)
-                    $permissions[$p_ind][$key] = 0;
-        }
-        else if($forum['forum_status'] == 'lock')
-        {
 
-            foreach($permissions as $p_ind=>$permissions_item)
-                foreach($permissions_item as $key=>$val)
-                    if($key != 'read_forum')
-                        $permissions[$p_ind][$key] = 0;           
+    //forums
+
+    while(true)
+    {
+        mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
+        $sql_result = get_limit_query("SELECT * FROM ".$tws_prefix."_forums", $sql_from);
+        $forums = fetch_array($sql_result);
+        if(!$forums)break;
+        foreach($forums as $forum)
+        {
+            $permissions = array();
+            for($i = 1; $i <= $groups_count; ++$i)
+            {
+                $group_id = ($i <= 5) ? $i : ($i + 1);
+                $permissions[$i]['read_forum'] = get_forum_permissions($forum['forum_id'], $group_id, 'auth_view');
+                $permissions[$i]['read_theme'] = get_forum_permissions($forum['forum_id'],$group_id, 'auth_read');
+                $permissions[$i]['creat_theme'] = get_forum_permissions($forum['forum_id'],$group_id, 'auth_post');
+                $permissions[$i]['answer_theme'] = get_forum_permissions($forum['forum_id'],$group_id, 'auth_reply');
+                $permissions[$i]['upload_files'] = get_forum_permissions($forum['forum_id'],$group_id, 'auth_sendfile');
+                $permissions[$i]['download_files'] = get_forum_permissions($forum['forum_id'],$group_id, 'auth_getfile');
+            }
+            $permissions[6] = $permissions[5];
+            if($forum['forum_status'] == 'hidden')
+            {
+                foreach($permissions as $p_ind=>$permissions_item)
+                    foreach($permissions_item as $key=>$val)
+                        $permissions[$p_ind][$key] = 0;
+            }
+            else if($forum['forum_status'] == 'lock')
+            {
+    
+                foreach($permissions as $p_ind=>$permissions_item)
+                    foreach($permissions_item as $key=>$val)
+                        if($key != 'read_forum')
+                            $permissions[$p_ind][$key] = 0;           
+            }
+            $permissions = serialize($permissions);
+            mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
+            mysql_query("INSERT INTO ".$lb_prefix."_forums SET 
+            title = '".mysql_escape_string($forum['forum_name'])."',
+            alt_name = '".mysql_escape_string(translit($forum['forum_name']))."',
+            description = '".mysql_escape_string($forum['forum_desc'])."',
+            posi = '".$forum['forum_order']."',
+            topics = '".$forum['forum_topics']."',
+            posts = '".$forum['forum_posts']."',
+            meta_desc = '".mysql_escape_string($forum['descr'])."',
+            meta_key = '".mysql_escape_string($forum['keywords'])."',
+            allow_bbcode = '1',
+            allow_poll = '1',
+            sort_order='DESC',
+            postcount = '1',
+            group_permission = '$permissions'
+            ", $sql_to) or die(mysql_error());
+            $forums_id[$forum['forum_id']] = mysql_insert_id();
         }
-        $permissions = serialize($permissions);
-        mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
-        mysql_query("INSERT INTO ".$lb_prefix."_forums SET 
-        title = '".mysql_escape_string($forum['forum_name'])."',
-        alt_name = '".mysql_escape_string(translit($forum['forum_name']))."',
-        description = '".mysql_escape_string($forum['forum_desc'])."',
-        posi = '".$forum['forum_order']."',
-        topics = '".$forum['forum_topics']."',
-        posts = '".$forum['forum_posts']."',
-        meta_desc = '".mysql_escape_string($forum['descr'])."',
-        meta_key = '".mysql_escape_string($forum['keywords'])."',
-        allow_bbcode = '1',
-        allow_poll = '1',
-        sort_order='DESC',
-        postcount = '1',
-        group_permission = '$permissions'
-        ", $sql_to) or die(mysql_error());
-        $forums_id[$forum['forum_id']] = mysql_insert_id();
     }
      mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
 	foreach($forums as $forum)
@@ -308,10 +304,9 @@ echo "Before install<br>";
         parent_id = '$parent_id' WHERE id='".$forums_id[$forum['forum_id']]."'       
         ", $sql_to) or die(mysql_error());
     }
-         echo "3<br>";
 
+    
     //topics
-
 	$user_topics = array();
 	
 	while(true)
@@ -355,34 +350,33 @@ echo "Before install<br>";
     //posts
 	while(true)
 	{
-	mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
-	$sql_result = get_limit_query("SELECT * FROM ".$tws_prefix."_posts", $sql_from);
-	$posts = fetch_array($sql_result);
-	if(!$posts)break;
-    foreach($posts as $post)
-    {
-        $member_id = get_member_id($post['poster']);
-        mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());        
-        $sql_result = mysql_query("SELECT text FROM ".$tws_prefix."_posts_text WHERE t_post_id='".$post['post_id']."'", $sql_from) or die(mysql_error());
-		$post_text=mysql_escape_string(dle_to_lb(mysql_result($sql_result, 0, 0), $site_path));
-        mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
-        mysql_query("INSERT INTO ".$lb_prefix."_posts SET
-        topic_id = '".$topics_id[$post['topic_id']]."',
-        post_date = '".timetoint($post['post_time'])."',
-        post_member_name = '".$post['poster']."',
-        post_member_id = '$member_id',
-        text = '".$post_text."',
-        ip = '".$post['ip']."',
-        hide = '0',
-        fixed = '0'
-        ", $sql_to) or die(mysql_error());
-
-        $posts_id[$post['post_id']] = mysql_insert_id();
-    }
+        mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
+        $sql_result = get_limit_query("SELECT * FROM ".$tws_prefix."_posts", $sql_from);
+        $posts = fetch_array($sql_result);
+        if(!$posts)break;
+        foreach($posts as $post)
+        {
+            $member_id = get_member_id($post['poster']);
+            mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());        
+            $sql_result = mysql_query("SELECT text FROM ".$tws_prefix."_posts_text WHERE t_post_id='".$post['post_id']."'", $sql_from) or die(mysql_error());
+            $post_text=mysql_escape_string(dle_to_lb(mysql_result($sql_result, 0, 0), $site_path));
+            mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
+            mysql_query("INSERT INTO ".$lb_prefix."_posts SET
+            topic_id = '".$topics_id[$post['topic_id']]."',
+            post_date = '".timetoint($post['post_time'])."',
+            post_member_name = '".$post['poster']."',
+            post_member_id = '$member_id',
+            text = '".$post_text."',
+            ip = '".$post['ip']."',
+            hide = '0',
+            fixed = '0'
+            ", $sql_to) or die(mysql_error());
+    
+            $posts_id[$post['post_id']] = mysql_insert_id();
+        }
 	}
-             echo "5<br>";
     //update posts
-        mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
+    mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
     $sql_result = mysql_query("SELECT * FROM ".$lb_prefix."_posts", $sql_to) or die(mysql_error());
     $posts = fetch_array($sql_result);   
     $post_data = array();
@@ -403,8 +397,7 @@ echo "Before install<br>";
     {
         $post_id = $item['post_id'];
         mysql_query("UPDATE ".$lb_prefix."_posts SET new_topic='1' WHERE pid='$post_id'", $sql_to) or die(mysql_error());
-    }     echo "6<br>";
-    
+    }
     //update topics
     mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());    
     $sql_result = mysql_query("SELECT * FROM ".$lb_prefix."_topics", $sql_to) or die(mysql_error());
@@ -439,7 +432,6 @@ echo "Before install<br>";
             WHERE id='$topic_id'", $sql_to) or die(mysql_error());
         }
     }
-           echo "7<br>";
     //update forums
         mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
     $sql_result = mysql_query("SELECT * FROM ".$lb_prefix."_forums WHERE parent_id > 0", $sql_to) or die(mysql_error());
@@ -471,7 +463,6 @@ echo "Before install<br>";
             ", $sql_to) or die(mysql_error());
         }
     }
-           echo "8<br>";
     
     //polls
         mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
@@ -500,7 +491,6 @@ echo "Before install<br>";
         mysql_query("UPDATE ".$lb_prefix."_topics SET poll_id='$poll_id' WHERE id='$topic_id'");
         $polls_id[$poll['id']] = $poll_id;
     }
-    echo "9<br>";
     //poll_logs
         mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
     $sql_result = mysql_query("SELECT * FROM ".$tws_prefix."_poll_log", $sql_from) or die(mysql_error());
@@ -541,7 +531,6 @@ echo "Before install<br>";
         stars='0'
         ", $sql_to) or die(mysql_error());
     }
-           echo "10<br>";
     //reputation logs
         mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
     $sql_result = mysql_query("SELECT * FROM ".$tws_prefix."_rate_logs", $sql_from) or die(mysql_error());
@@ -567,8 +556,7 @@ echo "Before install<br>";
         how='".(($log['direct'] == 1) ? '-1' : '+1')."',
         text=''
         ", $sql_to) or die(mysql_error());
-    }      echo "11<br>";
-
+    }
     //subscribe
     mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
     $sql_result = mysql_query("SELECT * FROM ".$tws_prefix."_topics_watch", $sql_from) or die(mysql_error());
@@ -580,8 +568,7 @@ echo "Before install<br>";
         subs_member = '".$watch['user_id']."',
         topic = '".$watch['topic_id']."'
         ", $sql_to) or die(mysql_error());
-    }      echo "12<br>";
-
+    }
     //moderators
         mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
     $sql_result = mysql_query("SELECT * FROM ".$tws_prefix."_config", $sql_from) or die(mysql_error());
@@ -779,10 +766,7 @@ mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
 }
 	
 	
-?>
-
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -803,6 +787,11 @@ mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
     input:focus {
         border: 1px solid #222;
     }
+
+    .container-header
+    {
+        font-weight:bold;
+    }
     
     #page {
         margin: auto;
@@ -816,6 +805,7 @@ mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
         margin:0 auto;
         display: block;
         text-align:center;
+        padding-bottom: 10px;
     }
     div#from_container
     {
@@ -836,12 +826,16 @@ mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
 
     div#submit
     {
-        display:block;
-        position:absolute;
-        top:200px;
-        left:500px;
+        margin: auto;
+        padding-top: 10px;
+        clear: both;
+        width: 100px;
     }
 
+    .option_item > label {
+        width: 110px;
+        display: inline-block;
+    }
 
     input[type=submit] 
     {
@@ -887,7 +881,7 @@ mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
 <div id="page">
 	<div id="header">Конвертор TWSF --> LogicBoard</div>
     <div id="from_container">
-        <label class="container_header">TWS Форум</label>
+        <label class="container-header">TWS Форум</label>
         <div class="option_item">
             <label>MySQL Сервер</label>
             <input type="text" name="from_mysql_host"/>
@@ -910,7 +904,7 @@ mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
         </div>
     </div>
     <div id="to_container">
-        <label class="container_header">LogicBoard</label>
+        <label class="container-header">LogicBoard</label>
         <div class="option_item">
             <label>MySQL Сервер</label>
             <input type="text" name="to_mysql_host"/>

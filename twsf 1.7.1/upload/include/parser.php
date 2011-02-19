@@ -5,8 +5,6 @@ require_once 'include/parse/functions.php';
 require_once 'include/parse/bbcode/function.php';
 require_once 'include/dle_parser.php';
 
-
-
 $count = 0;
 
 function bb_text($text)
@@ -54,7 +52,7 @@ function bb_text($text)
         $text = str_replace(":".$smile.":","::".$smile."::", $text);
     }
 	$text = preg_replace('#\[color=\#(.+?);\]#si','[color=#\\1]',$text);
-    
+
     return $text;
 }
 
@@ -70,6 +68,7 @@ function dle_to_lb($text, $site)
     $text = bb_text($text);
     $text = html_text($text, $site);
     return $text;
-
 }
+
+
 ?>

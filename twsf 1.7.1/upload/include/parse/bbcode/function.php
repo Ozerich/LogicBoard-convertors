@@ -8,22 +8,20 @@ function bb_decode($msg, $site)
 {
     global $count;
     $count++;
-
-    $cache_config['general_site']['conf_value'] = $site; // здесь нужно будет передать адрес форума, добавить поле в конвертер. Вид: http://site.ru/forum/ или просто http://site.ru/
-        
-	$msg = preg_replace("#\[b\](.+?)\[/b\]#ius", "<strong>\\1</strong>", $msg); //Bold	
+    $cache_config['general_site']['conf_value'] = $site; // здесь нужно будет передать адрес форума, добавить поле в конвертер. Вид: http://site.ru/forum/ или просто http://site.ru/  
+	$msg = preg_replace("#\[b\](.+?)\[/b\]#is", "<strong>\\1</strong>", $msg); //Bold	
 	$msg = preg_replace("#\[i\](.+?)\[/i\]#ius", "<i>\\1</i>", $msg); //italic
 	$msg = preg_replace("#\[s\](.+?)\[/s\]#ius", "<s>\\1</s>", $msg); //S
 	$msg = preg_replace("#\[u\](.+?)\[/u\]#ius", "<u>\\1</u>", $msg); //S
+	
     $msg = preg_replace("#\[center\](.+?)\[/center\]#ius", "<center>\\1</center>", $msg); //center
 	$msg = preg_replace("#\[size=([0-9]+?)\](.+?)\[/size\]#ius", "<font size='\\1'>\\2</font>", $msg); //size
 	$msg = preg_replace("#\[font=([a-z ]+?)\](.+?)\[/font\]#ius", "<font style='font-family:\\1'>\\2</font>", $msg); //font-family
 	$msg = preg_replace("#\[color=(\#[0-9ACDEF]+?)\](.+?)\[/color\]#ius", "<font style='color:\\1'>\\2</font>", $msg); //Color
-    
-    if(preg_match_all("#\[quote(=(([a-zа-я0-9 _\-]+?)(\|([0-9\., :]+?))?))?\]#ius", $msg, $shadow) == preg_match_all("#\[/quote\]#ius", $msg, $shadow))
+    if(preg_match_all("#\[quote(=(([a-zа-я0-9№ _\-]+?)(\|([0-9\., :]+?))?))?\]#ius", $msg, $shadow) == preg_match_all("#\[/quote\]#ius", $msg, $shadow))
     {
         $msg = preg_replace("#\[quote\]#ius", "<blockquote><p><span>Цитата:</span>", $msg); //quote
-        $msg = preg_replace("#\[quote(=(([a-zа-я0-9 _\-]+?)(\|([0-9\., :]+?))?))?\]#ius", "<blockquote><p><span>\\3 (\\5) писал:</span>", $msg); //quote
+        $msg = preg_replace("#\[quote(=(([a-zа-я0-9№ _\-]+?)(\|([0-9\., :]+?))?))?\]#ius", "<blockquote><p><span>\\3 (\\5) писал:</span>", $msg); //quote
 	    $msg = preg_replace("#\[/quote\]#ius", "</p></blockquote><!--quote -->", $msg); //quote
         $msg = preg_replace("#<blockquote><p><span>(.+?) \(\) (.+?)</span>#ius", "<blockquote><p><span>\\1 \\2</span>", $msg); //quote 	
 	} 
@@ -43,7 +41,7 @@ function bb_decode($msg, $site)
 	$msg = preg_replace_callback("#\[html\]([\s\S]+?)\[/html\]#ius", "html_syntax", $msg); //html	
     
 	$msg = preg_replace_callback("#\[translite\]([\s\S]+?)\[/translite\]#ius", "transliteit", $msg); //translite	   
-        
+       
     if(preg_match_all("#\[spoiler(=([^;!@\"'<>]+?))?\]#ius", $msg, $shadow) == preg_match_all("#\[/spoiler\]#ius", $msg, $shadow))
     {
         $msg = preg_replace_callback("#\[spoiler(=([^;!@\"'<>]+?))?\]#ius", "makespoiler", $msg); //spoiler	

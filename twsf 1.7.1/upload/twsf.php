@@ -48,7 +48,8 @@
         global $lb_prefix, $tws_prefix, $lb_dbname, $dle_dbname, $dle_prefix, $sql_from;
         mysql_select_db($dle_dbname, $sql_from);
         $sql_result = mysql_query("SELECT user_id FROM ".$dle_prefix."_users WHERE name = '$name'", $sql_from) or die(mysql_error());
-        return mysql_result($sql_result, 0, 0);
+		$result = @mysql_result($sql_result, 0, 0);
+		return ($result != FALSE) ? -1 : $result; 
         
 	}
 
@@ -57,7 +58,8 @@
         global $lb_prefix, $tws_prefix, $lb_dbname, $dle_dbname, $dle_prefix, $sql_from;
         mysql_select_db($dle_dbname, $sql_from);
         $sql_result = mysql_query("SELECT name FROM ".$dle_prefix."_users WHERE user_id = '$id'", $sql_from) or die(mysql_error());
-        return mysql_result($sql_result, 0, 0);
+        $result = @mysql_result($sql_result, 0, 0);
+		return ($result != FALSE) ? "Удалён" : $result; 
 	}
     
     function timetoint($time)
@@ -148,7 +150,7 @@
 	$GLOBALS['lb_dbname'] = $lb_dbname_;
 	$GLOBALS['dle_dbname'] = $dle_dbname_;
 		
-	global $lb_prefix, $tws_prefix, $lb_dbname, $dle_dbname, $dle_prefix;
+	global $lb_prefix, $tws_prefix, $lb_dbname, $dle_dbname, $dle_prefix,$last_limit_value;
 
     if(!check_url($site_path))
 		return "BAD_SITEPATH";
@@ -230,7 +232,7 @@
     $sql_result = mysql_query("SELECT * FROM ".$tws_prefix."_categories", $sql_from) or die(mysql_error());
 	$categories = fetch_array($sql_result);
 
-        mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
+      mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
    	foreach($categories as $category)
     {
         mysql_query("INSERT INTO ".$lb_prefix."_forums SET 
@@ -244,7 +246,6 @@
     }
 	
     //forums
-
     while(true)
     {
         mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
@@ -299,14 +300,22 @@
             $forums_id[$forum['forum_id']] = mysql_insert_id();
         }
     }
-     mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
-	foreach($forums as $forum)
+	$last_limit_value = 0;
+	while(true)
     {
-        $parent_id = $forum['p_forum_id'] == 0 ? $categories_id[$forum['cat_id']] : $forums_id[$forum['p_forum_id']];
-        mysql_query("UPDATE  ".$lb_prefix."_forums SET 
-        parent_id = '$parent_id' WHERE id='".$forums_id[$forum['forum_id']]."'       
-        ", $sql_to) or die(mysql_error());
-    }
+        mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());
+        $sql_result = get_limit_query("SELECT * FROM ".$tws_prefix."_forums", $sql_from);
+        $forums = fetch_array($sql_result);
+        if(!$forums)break;
+		foreach($forums as $forum)
+		{
+			$parent_id = $forum['p_forum_id'] == 0 ? $categories_id[$forum['cat_id']] : $forums_id[$forum['p_forum_id']];
+			mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
+			mysql_query("UPDATE  ".$lb_prefix."_forums SET 
+			parent_id = '$parent_id' WHERE id='".$forums_id[$forum['forum_id']]."'       
+			", $sql_to) or die(mysql_error());
+		}
+	}
 
     //topics
 	$user_topics = array();
@@ -356,7 +365,7 @@
         if(!$posts)break;
         foreach($posts as $post)
         {
-            $member_id = get_member_id($post['poster']);
+            $member_id = $users_id[get_member_id($post['poster'])];
             mysql_select_db($dle_dbname, $sql_from) or die(mysql_error());        
             $sql_result = mysql_query("SELECT text FROM ".$tws_prefix."_posts_text WHERE t_post_id='".$post['post_id']."'", $sql_from) or die(mysql_error());
             $post_text=mysql_escape_string(dle_to_lb(mysql_result($sql_result, 0, 0), $site_path));

@@ -18,29 +18,28 @@
 	
 	$lb_prefix = $lb_dbname = $tws_prefix = $tws_dbname = $dle_prefix = "";
 	
+	$limit_count = 1000;
 	
 	function fetch_array($sql_result)
 	{
 		for($result=array(); $row=mysql_fetch_array($sql_result); $result[] = $row);
 		return $result;
 	}
-	
-	const LIMIT_COUNT = 1000;
+
 	function get_limit_query($query, $sql_handle)
 	{
-		global $last_limit_query, $last_limit_value;
+		sleep(4);
+		global $limit_count,$last_limit_query, $last_limit_value;
 		if($query != $last_limit_query)
 		{
 			$last_limit_value = 0;
 			$last_limit_query = $query;
 		}
 		$start = $last_limit_value;
-		$finish = $start + LIMIT_COUNT;
+		$finish = $start + $limit_count;
 		$last_limit_value = $finish;
-		$count = LIMIT_COUNT;
-		$sql_result = mysql_query($query." LIMIT ".$start.",".$count, $sql_handle);
+		$sql_result = mysql_query($query." LIMIT ".$start.",".$limit_count, $sql_handle);
 		return $sql_result;
-		
 	}
 	
 

@@ -1,6 +1,7 @@
 <?php
-	set_time_limit(0);
-    ini_set('memory_limit', '512M');
+	//set_time_limit(0);
+    //ini_set('memory_limit', '512M');
+
 	
 	$status = array(
 		"MYSQL_FROM_ERROR" => "Невозможно подлючиться к MySQL серверу TWS форума",
@@ -49,7 +50,7 @@
         mysql_select_db($dle_dbname, $sql_from);
         $sql_result = mysql_query("SELECT user_id FROM ".$dle_prefix."_users WHERE name = '$name'", $sql_from) or die(mysql_error());
 		$result = @mysql_result($sql_result, 0, 0);
-		return ($result != FALSE) ? -1 : $result; 
+		return ($result == FALSE) ? -1 : $result; 
         
 	}
 
@@ -59,7 +60,7 @@
         mysql_select_db($dle_dbname, $sql_from);
         $sql_result = mysql_query("SELECT name FROM ".$dle_prefix."_users WHERE user_id = '$id'", $sql_from) or die(mysql_error());
         $result = @mysql_result($sql_result, 0, 0);
-		return ($result != FALSE) ? "Удалён" : $result; 
+		return ($result == FALSE) ? "Удалён" : $result; 
 	}
     
     function timetoint($time)
@@ -197,7 +198,9 @@
     mysql_select_db($params['from_db_name'], $sql_from) or die(mysql_error());
     $sql_result = mysql_query("SELECT * FROM ".$dle_prefix."_users",$sql_from) or die(mysql_error());
 	$users = fetch_array($sql_result);
-
+	
+	$users_id = array();
+	
    	foreach($users as $item)
 	{
 		$member_sk = md5(md5($item['password'].time().$item['logged_ip']));
@@ -629,7 +632,7 @@
 		if($item['users_id'] != 0)
 		{
 			$user_id = $users_id[$item['users_id']];
-			$descr = get_member_name($user_id);
+			$descr = get_member_name($item['users_id']);
 			$type = "name";
 			$ban_member_id = $user_id;
             mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());

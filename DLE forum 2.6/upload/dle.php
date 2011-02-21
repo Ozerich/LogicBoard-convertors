@@ -195,35 +195,37 @@ function convert($params)
     //Categories
     echo "Categories...";
     mysql_select_db($dle_dbname, $sql_from);
-    $sql_result = mysql_query("SELECT * FROM " . $dle_prefix . "_forum_category ORDER by sid ASC", $sql_from) or die(mysql_error());
+    $sql_result = mysql_query("SELECT * FROM " . $dle_prefix . "_forum_forums WHERE is_category = '1' ORDER by id ASC", $sql_from) or die(mysql_error());
     $result = fetch_array($sql_result);
     mysql_select_db($lb_dbname, $sql_to);
     foreach ($result as $item)
     {
+        $alt_name = ($item['alt_name'] == "") ? translit($item['alt_name']) : $item['alt_name'];
         $postcount = (isset($item['postcount'])) ? $item['postcount'] : 1;
         mysql_query("INSERT INTO " . $lb_prefix . "_forums SET
 		parent_id='0',
-		title='" . mysql_escape_string($item['cat_name']) . "',
-		alt_name='" . mysql_escape_string(translit($item['cat_name'])) . "',
+		title='" . mysql_escape_string($item['name']) . "',
+		alt_name='" . mysql_escape_string($alt_name) . "',
 		postcount='$postcount',
-		posi='" . $item['posi'] . "'", $sql_to) or die(mysql_error());
-        $categories_id[$item['sid']] = mysql_insert_id();
+		posi='" . $item['position'] . "'", $sql_to) or die(mysql_error());
+        $forums_id[$item['id']] = mysql_insert_id();
     }
     echo "OK<br/>";
+
+
     echo "Forums...";
 
     //forums
     while (true)
     {
         mysql_select_db($dle_dbname, $sql_from);
-        $sql_result = get_limit_query("SELECT * FROM " . $dle_prefix . "_forum_forums ORDER by id ASC", $sql_from);
+        $sql_result = get_limit_query("SELECT * FROM " . $dle_prefix . "_forum_forums WHERE is_category = '0' ORDER by id ASC", $sql_from);
         $result = fetch_array($sql_result);
         if (!$result) break;
         foreach ($result as $item)
         {
             $access_write = explode(":", $item['access_write']);
             $access_read = explode(":", $item['access_read']);
-            $access_mod = explode(":", $item['access_mod']);
             $access_topic = explode(":", $item['access_topic']);
             $access_upload = explode(":", $item['access_upload']);
             $access_download = explode(":", $item['access_download']);
@@ -265,11 +267,13 @@ function convert($params)
             $postcount = (isset($item['postcount'])) ? $item['postcount'] : 1;
 
             $last_user = $users_id[get_member_id($item['f_last_poster_name'])];
+            $alt_name = ($item['alt_name'] == "") ? translit($item['alt_name']) : $item['alt_name'];
+
             mysql_select_db($lb_dbname, $sql_to);
             mysql_query("INSERT INTO " . $lb_prefix . "_forums SET
             posi='" . $item['position'] . "',
             title='" . mysql_escape_string($item['name']) . "',
-            alt_name='" . mysql_escape_string(translit($item['name'])) . "',
+            alt_name='" . mysql_escape_string($alt_name) . "',
             description='" . mysql_escape_string($item['description']) . "',
             last_post_member='" . $item['f_last_poster_name'] . "',
             last_post_member_id='$last_user',
@@ -295,13 +299,13 @@ function convert($params)
     while (true)
     {
         mysql_select_db($dle_dbname, $sql_from);
-        $sql_result = get_limit_query("SELECT * FROM " . $dle_prefix . "_forum_forums ORDER by id ASC", $sql_from);
+        $sql_result = get_limit_query("SELECT * FROM " . $dle_prefix . "_forum_forums WHERE is_category = '0' ORDER by id ASC", $sql_from);
         $result = fetch_array($sql_result);
         if (!$result) break;
         mysql_select_db($lb_dbname, $sql_to);
         foreach ($result as $item)
         {
-            $parent_id = $item['parentid'] != 0 ? $forums_id[$item['parentid']] : $categories_id[$item['main_id']];
+            $parent_id = $item['parentid'] != -1 ? $forums_id[$item['parentid']] : 0;
             $forum_id = $forums_id[$item['id']];
             mysql_query("UPDATE " . $lb_prefix . "_forums SET parent_id='$parent_id' WHERE id='$forum_id'", $sql_to) or die(mysql_error());
         }
@@ -948,7 +952,7 @@ function convert($params)
 
 <form action="" method="POST">
     <div id="page">
-        <div id="header">Конвертор DLE Forum 2.5 --> LogicBoard</div>
+        <div id="header">Конвертор DLE Forum 2.6 --> LogicBoard</div>
         <div id="from_container">
             <label class="container-header">DLE Forum</label>
 

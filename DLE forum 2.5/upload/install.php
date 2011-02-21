@@ -1,10 +1,10 @@
 <?php
 
-	mysql_connect($mysql_host, $mysql_user, $mysql_password);
-	mysql_select_db($lb_dbname);
-	
-	$table_name = $lb_prefix."_forums";
-	@mysql_query("DROP TABLE $table_name");
+function install($handle, $db_name, $table_prefix)
+{
+	   mysql_select_db($db_name, $handle);
+	$table_name = $table_prefix."_forums";
+	@mysql_query("DROP TABLE $table_name", $handle);
 	mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `parent_id` smallint(5) NOT NULL DEFAULT '0',
@@ -40,10 +40,10 @@
   KEY `last_post_member_id` (`last_post_member_id`),
   KEY `last_post_date` (`last_post_date`),
   KEY `sort_order` (`sort_order`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;");
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;", $handle) or die(mysql_error());
 
-$table_name = $lb_prefix."_members";
-@mysql_query("DROP TABLE $table_name");
+$table_name = $table_prefix."_members";
+@mysql_query("DROP TABLE $table_name", $handle);
 mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `member_id` mediumint(8) NOT NULL AUTO_INCREMENT,
   `name` varchar(40)  NOT NULL DEFAULT '',
@@ -102,10 +102,10 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   KEY `reputation` (`reputation`),
   KEY `reputation_freeze` (`reputation_freeze`),
   KEY `reg_status` (`reg_status`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;");
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;", $handle);
 
-$table_name = $lb_prefix."_members_banfilters";
-@mysql_query("DROP TABLE $table_name");
+$table_name = $table_prefix."_members_banfilters";
+@mysql_query("DROP TABLE $table_name", $handle);
 mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `id` mediumint(8) NOT NULL AUTO_INCREMENT,
   `type` varchar(20)  DEFAULT '',
@@ -118,10 +118,10 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   PRIMARY KEY (`id`),
   KEY `type` (`type`),
   KEY `date` (`date`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;");
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;", $handle);
 
-$table_name = $lb_prefix."_topics";
-@mysql_query("DROP TABLE $table_name");
+$table_name = $table_prefix."_topics";
+@mysql_query("DROP TABLE $table_name", $handle);
 mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `id` mediumint(8) NOT NULL AUTO_INCREMENT,
   `forum_id` mediumint(8) NOT NULL DEFAULT '0',
@@ -156,10 +156,10 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   KEY `last_post_member` (`last_post_member`),
   KEY `basket` (`basket`),
   KEY `member_name_open` (`member_name_last`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;");
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;", $handle);
 
-$table_name = $lb_prefix."_posts";
-@mysql_query("DROP TABLE $table_name");
+$table_name = $table_prefix."_posts";
+@mysql_query("DROP TABLE $table_name", $handle);
 mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `pid` mediumint(8) NOT NULL AUTO_INCREMENT,
   `topic_id` mediumint(8) NOT NULL DEFAULT '0',
@@ -187,10 +187,10 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   KEY `post_member_id` (`post_member_id`),
   KEY `post_member_name` (`post_member_name`),
   KEY `ip` (`ip`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;");
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;", $handle);
 
-$table_name = $lb_prefix."_topics_poll";
-@mysql_query("DROP TABLE $table_name");
+$table_name = $table_prefix."_topics_poll";
+@mysql_query("DROP TABLE $table_name", $handle);
 mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `id` int(10) NOT NULL AUTO_INCREMENT,
   `tid` int(10) NOT NULL DEFAULT '0',
@@ -205,10 +205,10 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   KEY `tid` (`tid`),
   KEY `vote_num` (`vote_num`),
   KEY `open_date` (`open_date`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;");
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;", $handle);
 
-$table_name = $lb_prefix."_topics_poll_logs";
-@mysql_query("DROP TABLE $table_name");
+$table_name = $table_prefix."_topics_poll_logs";
+@mysql_query("DROP TABLE $table_name", $handle);
 mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `poll_id` int(10) NOT NULL DEFAULT '0',
@@ -222,10 +222,10 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   KEY `member_id` (`member_id`),
   KEY `log_date` (`log_date`),
   KEY `answer` (`answer`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=15 ;");
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=15 ;", $handle);
 
-$table_name = $lb_prefix."_forums_moderator";
-@mysql_query("DROP TABLE $table_name");
+$table_name = $table_prefix."_forums_moderator";
+@mysql_query("DROP TABLE $table_name", $handle);
 mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `fm_id` mediumint(8) NOT NULL AUTO_INCREMENT,
   `fm_forum_id` int(11) NOT NULL DEFAULT '0',
@@ -240,10 +240,10 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   KEY `fm_member_name` (`fm_member_name`),
   KEY `fm_group_id` (`fm_group_id`),
   KEY `fm_is_group` (`fm_is_group`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;");
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;", $handle);
 
-$table_name = $lb_prefix."_groups";
-@mysql_query("DROP TABLE $table_name");
+$table_name = $table_prefix."_groups";
+@mysql_query("DROP TABLE $table_name", $handle);
 mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `g_id` mediumint(8) NOT NULL AUTO_INCREMENT,
   `g_title` varchar(40)  NOT NULL DEFAULT '',
@@ -274,10 +274,10 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `g_status` mediumint(8) NOT NULL DEFAULT '50',
   PRIMARY KEY (`g_id`),
   KEY `g_title` (`g_title`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8");
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8", $handle);
 
-$table_name = $lb_prefix."_members_ranks";
-@mysql_query("DROP TABLE $table_name");
+$table_name = $table_prefix."_members_ranks";
+@mysql_query("DROP TABLE $table_name", $handle);
 mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `id` mediumint(8) NOT NULL AUTO_INCREMENT,
   `title` varchar(255)  NOT NULL DEFAULT '',
@@ -287,10 +287,10 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   KEY `title` (`title`),
   KEY `post_num` (`post_num`),
   KEY `stars` (`stars`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;");
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8;", $handle);
 
-$table_name = $lb_prefix."_topics_subscribe";
-@mysql_query("DROP TABLE $table_name");
+$table_name = $table_prefix."_topics_subscribe";
+@mysql_query("DROP TABLE $table_name", $handle);
 mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `id` int(10) NOT NULL AUTO_INCREMENT,
   `subs_member` mediumint(8) NOT NULL DEFAULT '0',
@@ -301,10 +301,10 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   KEY `subs_member` (`subs_member`),
   KEY `topic` (`topic`),
   KEY `date` (`date`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;");
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8;", $handle);
 
-$table_name = $lb_prefix."_members_reputation";
-@mysql_query("DROP TABLE $table_name");
+$table_name = $table_prefix."_members_reputation";
+@mysql_query("DROP TABLE $table_name", $handle);
 mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `id` int(10) NOT NULL AUTO_INCREMENT,
   `from_id` mediumint(8) NOT NULL DEFAULT '0',
@@ -321,10 +321,10 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   KEY `to_name` (`to_name`),
   KEY `date` (`date`),
   KEY `change` (`how`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;");
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8;", $handle);
 
-$table_name = $lb_prefix."_topics_files";
-mysql_query("DROP TABLE $table_name");
+$table_name = $table_prefix."_topics_files";
+mysql_query("DROP TABLE $table_name", $handle);
 mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `file_id` mediumint(8) NOT NULL auto_increment,
   `file_title` varchar(255) NOT NULL default '',
@@ -345,10 +345,10 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   KEY `file_tid` (`file_tid`),
   KEY `file_pid` (`file_pid`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-");
+", $handle);
 
-$table_name = $lb_prefix."_members_warning";
-mysql_query("DROP TABLE $table_name");
+$table_name = $table_prefix."_members_warning";
+mysql_query("DROP TABLE $table_name", $handle);
 mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
  `id` mediumint(8) NOT NULL auto_increment,
   `mid` mediumint(8) NOT NULL default '0',
@@ -362,6 +362,8 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   KEY `st_w` (`st_w`),
   KEY `moder_id` (`moder_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-");
+", $handle);
 
-?>
+}
+
+

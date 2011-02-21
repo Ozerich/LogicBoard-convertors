@@ -29,7 +29,7 @@
 
 	function get_limit_query($query, $sql_handle)
 	{
-		sleep(4);
+		sleep(2);
 		global $limit_count,$last_limit_query, $last_limit_value;
 		if($query != $last_limit_query)
 		{
@@ -780,7 +780,7 @@ mysql_select_db($lb_dbname, $sql_to) or die(mysql_error());
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <title>Конвертор tws-Forum -> Lb-Forum</title>
+    <title>Конвертор TWS Forum -> LogicBoard</title>
     <link rel="stylesheet" href="style.css"/>
     <style>
     * {

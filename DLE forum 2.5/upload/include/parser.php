@@ -1,5 +1,6 @@
 <?php
 
+
 require_once 'include/parse/functions.php';
 require_once 'include/parse/bbcode/function.php';
 require_once 'include/dle_parser.php';
@@ -8,15 +9,13 @@ $count = 0;
 
 function bb_text($text)
 {
-
     $dle_parser = new ParseFilter();
 
-   // $text = str_replace(array('<!--dle_leech_begin-->','<!--dle_leech_end-->'), array('',''), $text);
-
     $text = htmlspecialchars_decode($text);
+
     $text = $dle_parser->decodeBBCodes($text, false);
     $text = str_replace("&nbsp;"," ", $text);
-    $text = html_entity_decode($text);
+    $text = html_entity_decode($text,ENT_QUOTES);	
 
 
     $smiles = array("winked" => "019",
@@ -52,30 +51,24 @@ function bb_text($text)
         $exist[$smile] = 1;
         $text = str_replace(":".$smile.":","::".$smile."::", $text);
     }
+	$text = preg_replace('#\[color=\#(.+?);\]#si','[color=#\\1]',$text);
 
-    
     return $text;
 }
 
 function html_text($text, $site)
 {
-
     $text = preg_replace("#\[leech=(.+?)\](.+?)\[/leech\]#is", '[url=\\1]\\2[/url]', $text);
-
-
     $text = parse_word($text,  $site);
-
     return $text;
 }
 
 function dle_to_lb($text, $site)
 {
     $text = bb_text($text);
-
-
     $text = html_text($text, $site);
- 
     return $text;
-
 }
+
+
 ?>

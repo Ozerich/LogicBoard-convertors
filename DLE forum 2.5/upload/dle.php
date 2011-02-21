@@ -4,6 +4,7 @@ set_time_limit(0);
 ini_set('memory_limit', '512M');
 
 
+
 $status = array(
     "MYSQL_FROM_ERROR" => "Невозможно подлючиться к MySQL серверу DLE форума",
     "MYSQL_TO_ERROR" => "Невозможно подлючиться к MySQL серверу LogicBoard",
@@ -222,7 +223,6 @@ function convert($params)
             $access_write = explode(":", $item['access_write']);
             $access_read = explode(":", $item['access_read']);
             $access_mod = explode(":", $item['access_mod']);
-            $access_write = explode(":", $item['access_write']);
             $access_topic = explode(":", $item['access_topic']);
             $access_upload = explode(":", $item['access_upload']);
             $access_download = explode(":", $item['access_download']);
@@ -280,9 +280,7 @@ function convert($params)
             password='" . mysql_escape_string($item['password']) . "',
             sort_order='DESC',
             posts='" . $item['posts'] . "',
-            topics ='" . $item['topics'] . "',"
-                        /*posts_hiden='".$item['posts_hiden']."',
-                        topics_hiden='".$item['topics_hiden']."',*/ . "
+            topics ='" . $item['topics'] . "',
             rules='" . $item['rules'] . "',
             meta_desc='',
             meta_key=''
@@ -321,7 +319,6 @@ function convert($params)
         $max_data = array();
         foreach ($result as $item)
         {
-            $first_post_id = "0"; //!!!!!!
             $forum_id = $forums_id[$item['forum_id']];
             $date_last = datetime_to_int($item['last_date']);
             $hidden = ($item['hidden'] >= 1) ? 1 : 0;
@@ -329,7 +326,6 @@ function convert($params)
             forum_id='$forum_id',
             title='" . mysql_escape_string($item['title']) . "',
             description='" . mysql_escape_string($item['topic_descr']) . "',
-            post_id='$first_post_id',                     
             date_open='" . datetime_to_int($item['start_date']) . "',
             date_last='$date_last',
             status='" . (($item['topic_status'] == 0) ? "open" : "closed") . "',
@@ -394,6 +390,8 @@ function convert($params)
             $post_date = datetime_to_int($item['post_date']);
             $post_member_id = $users_id[get_member_id($item['post_author'])];
             $edit_member_id = $users_id[get_member_id($item['edit_user'])];
+            $edit_member_id = ($edit_member_id == -1) ? "" : $edit_member_id;
+            $edit_member_name = ($item['edit_user'] == "0") ? "" : $item['edit_user'];
             $hiden = ($item['hidden'] == 1) ? 1 : 0;
 
             mysql_select_db($lb_dbname, $sql_to);
@@ -408,10 +406,9 @@ function convert($params)
             ip='" . $item['post_ip'] . "',
             hide='$hiden',
             edit_member_id='$edit_member_id',
-            edit_member_name='" . $item['edit_user'] . "',
+            edit_member_name='$edit_member_name',
             edit_reason='',
-            fixed='0'
-            ", $sql_to) or die(mysql_error());
+            fixed='0'", $sql_to) or die(mysql_error());
             $posts_id[$item['pid']] = mysql_insert_id();
 
             if ((!isset($min_data[$topic_id])) || ($min_data[$topic_id]["time"] > $post_date)) {
@@ -571,11 +568,11 @@ function convert($params)
     mysql_select_db($dle_dbname, $sql_from);
     $sql_result = mysql_query("SELECT * FROM " . $dle_prefix . "_forum_poll_log  ORDER by id ASC", $sql_from) or die(mysql_error());
     $result = fetch_array($sql_result);
-    mysql_select_db($lb_dbname, $sql_to);
     foreach ($result as $item)
     {
         $user_id = $users_id[$item['member']];
         $user_name = get_member_name($user_id);
+        mysql_select_db($lb_dbname, $sql_to);
         $sql_result = mysql_query("SELECT ip FROM " . $lb_prefix . "_members WHERE member_id='$user_id'", $sql_to) or die(mysql_error());
         $user_ip = mysql_result($sql_result, 0, 0);
         $topic_id = $topics_id[$item['topic_id']];
@@ -597,7 +594,6 @@ function convert($params)
     mysql_select_db($dle_dbname, $sql_from);
     $sql_result = mysql_query("SELECT * FROM " . $dle_prefix . "_forum_moderators  ORDER by mid ASC", $sql_from) or die(mysql_error());
     $result = fetch_array($sql_result);
-    mysql_select_db($lb_dbname, $sql_to);
     foreach ($result as $item)
     {
         if ($item['member_id'] == 0)
@@ -627,13 +623,15 @@ function convert($params)
         $permissions = serialize($permissions);
 
         $member_id = $users_id[$item['member_id']];
+        $member_name = get_member_name($member_id);
+        mysql_select_db($lb_dbname, $sql_to);
         $mysql_result = mysql_query("SELECT member_group FROM " . $lb_prefix . "_members WHERE member_id='$member_id'", $sql_to) or die(mysql_error());
         $group = mysql_result($mysql_result, 0, 0);
         $group = $group < 6 ? $group : $item['group_id'] + 1;
         mysql_query("INSERT INTO " . $lb_prefix . "_forums_moderator SET
 		fm_forum_id='" . $forums_id[$item['forum_id']] . "',
 		fm_member_id='$member_id',
-		fm_member_name='" . get_member_name($member_id) . "',
+		fm_member_name='" . $member_name . "',
 		fm_group_id='$group',
 		fm_is_group='0',
 		fm_permission='$permissions'
@@ -664,11 +662,20 @@ function convert($params)
     mysql_select_db($lb_dbname, $sql_to);
     foreach ($result as $item)
     {
-        mysql_query("INSERT INTO " . $lb_prefix . "_subscribe SET
-		subs_member='" . $users_id[$item['user_id']] . "',
-		topic = '" . $topics_id[$item['topic_id']] . "'
+        $user_id = $users_id[$item['user_id']];
+        $topic_id = $topics_id[$item['topic_id']];
+        mysql_query("INSERT INTO " . $lb_prefix . "_topics_subscribe SET
+		subs_member='" . $user_id . "',
+		topic = '" . $topic_id . "'
 		", $sql_to) or die(mysql_error());
+
+        $sql_result = mysql_query("SELECT subscribe FROM ".$lb_prefix."_members WHERE member_id='$user_id'", $sql_to) or die(mysql_error());
+        $s_text = mysql_result($sql_result, 0, 0);
+        $s_text = ($s_text == "") ? $topic_id : $s_text.",".$topic_id;
+        mysql_query("UPDATE ".$lb_prefix."_members SET subscribe='$s_text' WHERE member_id='$user_id'", $sql_to) or die(mysql_error());
     }
+
+
     echo "OK<br/>";
     echo "Files...";
     //files

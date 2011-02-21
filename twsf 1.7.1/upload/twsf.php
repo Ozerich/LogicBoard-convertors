@@ -584,6 +584,11 @@ function convert($params)
         subs_member = '" . $watch['user_id'] . "',
         topic = '" . $watch['topic_id'] . "'
         ", $sql_to) or die(mysql_error());
+        $sql_result = mysql_query("SELECT subscribe FROM ".$lb_prefix."_members WHERE member_id='$user_id'", $sql_to) or die(mysql_error());
+        $s_text = mysql_result($sql_result, 0, 0);
+        $s_text = ($s_text == "") ? $topic_id : $s_text.",".$topic_id;
+        mysql_query("UPDATE ".$lb_prefix."_members SET subscribe='$s_text' WHERE member_id='$user_id'", $sql_to) or die(mysql_error());
+
     }
     echo "OK<br/>";
     echo "Moderators...";
@@ -894,7 +899,7 @@ function convert($params)
 
 <form action="" method="POST">
     <div id="page">
-        <div id="header">Конвертор TWSF --> LogicBoard</div>
+        <div id="header">Конвертор TWSF 1.7.1 --> LogicBoard</div>
         <div id="from_container">
             <label class="container-header">TWS Форум</label>
 

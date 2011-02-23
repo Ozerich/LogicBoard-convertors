@@ -66,6 +66,7 @@ function check_url($url)
     return preg_match($preg, $url);
 }
 
+
 function convert($params)
 {
 
@@ -106,6 +107,188 @@ function convert($params)
     include "install.php";
     install($sql_to, $lb_dbname, $lb_prefix);
     echo "OK<br/>";
+
+    $groups_key = array("4"=>"1","6"=>"2","3"=>"4","2"=>"5","1"=>"6");
+
+    $users_id = array();
+    $forums_id = array();
+    $topics_id = array();
+    $posts_id = array();
+
+
+    echo "Groups...";
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_groups", $sql_from) or die(mysql_error());
+    $groups = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($groups as $group)
+    {
+        if($group['g_id'] == '5')continue;
+        $lb_group_id = isset($groups_key[$group['g_id']]) ? $groups_key[$group['g_id']] : $group['g_id'];
+
+        mysql_query("INSERT INTO ".$lb_prefix."_groups SET
+        g_id = '$lb_group_id',
+        g_title = '".mysql_escape_string($group['g_title'])."',
+        g_prefix_st = '".mysql_escape_string($group['prefix'])."',
+        g_prefix_end = '".mysql_escape_string($group['suffix'])."'"
+           , $sql_to) or die(mysql_error());
+    }
+    echo "OK<br/>";
+
+
+    echo "Users...";
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_members", $sql_from) or die(mysql_error());
+    $users = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($users as $user)
+    {
+        if($user['mgroup'] == 5)continue;
+        $group = (isset($groups_key[$user['mgroup']])) ? $groups_key[$user['mgroup']] : $user['mgroup'];
+
+        mysql_query("INSERT INTO ".$lb_prefix."_members SET
+        name = '".mysql_escape_string($user['name'])."',
+        email = '".mysql_escape_string($user['email'])."',
+        reg_date = '".$user['join']."',
+        member_group = '$group',
+        password = '".$user['member_login_key']."',
+        secret_key = '',
+        ip = '".$user['ip_address']."',
+        personal_title = '".mysql_escape_string($user['title'])."',
+        reg_status = '1',
+        lastdate = '".$user['last_visit']."',
+        b_day = '".$user['bday_day']."',
+        b_month = '".$user['bday_month']."',
+        b_year = '".$user['bday_year']."',
+        count_warning = '".$user['warn_level']."',
+        posts_num = '".$user['posts']."'"
+        ,$sql_to) or die(mysql_error());
+        $users_id[$user['id']] = mysql_insert_id();
+    }
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_member_extra", $sql_from) or die(mysql_error());
+    $users_extra = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($users_extra as $info)
+    {
+        $user_id = $users_id[$info['id']];
+        mysql_query("UPDATE ".$lb_prefix."_members SET
+        icq = '".$info['icq_number']."',
+        signature = '".mysql_escape_string($info['signature'])."',
+        town = '".mysql_escape_string($info['location'])."'
+         WHERE member_id = '$user_id'", $sql_to) or die(mysql_error());
+    }
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_profile_portal", $sql_from) or die(mysql_error());
+    $users_extra = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($users_extra as $info)
+    {
+        $user_id = $users_id[$info['pp_member_id']];
+        $sex = 0;
+        if($item['gender'] == 'male')$sex = 1;
+        if($item['gender'] == 'female')$sex = 2;
+        mysql_query("UPDATE ".$lb_prefix."_members SET
+        about = '".mysql_escape_string($info['pp_bio_content'])."',
+        sex = '$sex'
+         WHERE member_id = '$user_id'", $sql_to) or die(mysql_error());
+    }
+    echo "OK<br/>";
+
+    echo "Categories...";
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_forums WHERE parent_id = '-1'") or die(mysql_error());
+    $categories = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($categories as $category)
+    {
+        mysql_query("INSERT INTO " . $lb_prefix . "_forums SET
+		parent_id='0',
+		title='" . mysql_escape_string($category['name']) . "',
+		alt_name='" . mysql_escape_string(translit($category['name'])) . "',
+		postcount='".$category['inc_postcount']."',
+		posi='" . $category['position'] . "'"
+            , $sql_to) or die(mysql_error());
+        $forums_id[$category['id']] = mysql_insert_id();
+    }
+    echo "OK<br/>";
+
+
+    echo "Forums...";
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_forums WHERE parent_id != '-1' ORDER BY id ASC") or die(mysql_error());
+    $forums = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($forums as $forum)
+    {
+            $sort_order = $forum['sort_order'] == 'Z-A' ? 'DESC' : 'ASC';
+            mysql_query("INSERT INTO " . $lb_prefix . "_forums SET
+            posi='" . $forum['position'] . "',
+            parent_id='" . $forums_id[$forum['parent_id']] . "',
+            title='" . mysql_escape_string($forum['name']) . "',
+            alt_name='" . mysql_escape_string(translit($forum['name'])) . "',
+            description='" . mysql_escape_string($forum['description']) . "',
+            allow_bbcode='1',
+            allow_poll='".$forum['allow_poll']."',
+            postcount='".$forum['inc_postcount']."',
+            sort_order='$sort_order',
+            posts='" . $forum['posts'] . "',
+            rules='" . $forum['rules_text '] . "'
+            ", $sql_to) or die(mysql_error());
+            $forums_id[$forum['id']] = mysql_insert_id();
+    }
+    echo "OK<br/>";
+
+    echo "Topics...";
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_topics ORDER BY tid ASC") or die(mysql_error());
+    $topics = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($topics as $topic)
+    {
+        mysql_query("INSERT INTO ". $lb_prefix. "_topics SET
+        forum_id = '".$forums_id[$topic['forum_id']]."',
+        title  = '".mysql_escape_string($topic['title'])."',
+        description  = '".mysql_escape_string($topic['description'])."',
+        date_open = '".$topic['start_date']."',
+        date_last = '".$topic['last_post']."',
+        post_num = '".$topic['posts']."',
+        views = '".$topic['views']."',
+        last_post_member  = '".$topic['last_poster_id']."',
+        member_name_open  = '".$topic['starter_name']."',
+        member_id_open  = '".$topic['starter_id']."',
+        member_name_last  = '".$topic['last_poster_name']."'
+        ", $sql_to) or die(mysql_error());
+        $topics_id[$topic['tid']] = mysql_insert_id();
+    }
+    echo "OK<br/>";
+
+    echo "Posts...";
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_posts ORDER BY pid ASC") or die(mysql_error());
+    $posts = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($posts as $post)
+    {
+        mysql_query("INSERT INTO ".$lb_prefix."_posts SET
+        topic_id = '".$topics_id[$post['topic_id']]."',
+        new_topic = '".$post['new_topic']."',
+        text = '".mysql_escape_string($post['post'])."',
+        post_date = '".$post['post_date']."',
+        edit_date = '".$post['edit_time']."',
+        post_member_id = '".$users_id[$post['author_id']]."',
+        ip = '".$post['ip_address']."',
+        edit_member_name = '".$post['edit_name']."',
+        edit_reason = '".mysql_escape_string($post['post_edit_reason'])."'
+        ", $sql_to) or die(mysql_error());
+        $posts_id[$post['pid']] = mysql_insert_id();
+    }
+
+    echo "OK<br>";
+
+
+
+    return "NO_ERROR";
 
 }
 

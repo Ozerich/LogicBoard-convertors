@@ -161,7 +161,7 @@ function convert($params)
 		lastdate='" . $item['lastdate'] . "',
 		reg_date='" . $item['reg_date'] . "',
 		ip='" . $item['logged_ip'] . "',
-		personal_title='',
+		personal_title='' ,
 		reg_status='1',
 		avatar='',
 		fullname='" . mysql_escape_string($item['fullname']) . "',

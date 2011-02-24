@@ -66,6 +66,23 @@ function check_url($url)
     return preg_match($preg, $url);
 }
 
+function get_member_id($name)
+{
+    global $lb_prefix, $lb_dbname, $sql_to;
+    mysql_select_db($lb_dbname, $sql_to);
+    $sql_result = mysql_query("SELECT member_id FROM ".$lb_prefix."_members WHERE name ='$name'", $sql_to) or die(mysql_error());
+    $result = mysql_result($sql_result, 0, 0);
+    return ($result) ? $result : -1;
+}
+
+function get_member_name($id)
+{
+    global $lb_prefix, $lb_dbname, $sql_to;
+    mysql_select_db($lb_dbname, $sql_to);
+    $sql_result = mysql_query("SELECT name FROM ".$lb_prefix."_members WHERE member_id = '$id'", $sql_to) or die(mysql_error());
+    $result = mysql_result($sql_result, 0, 0);
+    return ($result) ? $result : "Удалён";
+}
 
 function convert($params)
 {
@@ -270,15 +287,18 @@ function convert($params)
     mysql_select_db($lb_dbname, $sql_to);
     foreach($posts as $post)
     {
+        $user_id = $users_id[$post['author_id']];
         mysql_query("INSERT INTO ".$lb_prefix."_posts SET
         topic_id = '".$topics_id[$post['topic_id']]."',
         new_topic = '".$post['new_topic']."',
         text = '".mysql_escape_string($post['post'])."',
         post_date = '".$post['post_date']."',
         edit_date = '".$post['edit_time']."',
-        post_member_id = '".$users_id[$post['author_id']]."',
+        post_member_id = '".$user_id."',
+        post_member_name = '".get_member_name($user_id)."',
         ip = '".$post['ip_address']."',
         edit_member_name = '".$post['edit_name']."',
+        edit_member_id = '".get_member_id($post['edit_name'])."',
         edit_reason = '".mysql_escape_string($post['post_edit_reason'])."'
         ", $sql_to) or die(mysql_error());
         $posts_id[$post['pid']] = mysql_insert_id();

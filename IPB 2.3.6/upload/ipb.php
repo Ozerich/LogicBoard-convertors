@@ -12,6 +12,10 @@ $status = array(
     "NO_ERROR" => "Форум успешно перенесён. Удалите этот файл!",
 );
 
+print_r(unserialize('a:6:{s:11:"start_perms";s:7:"1,2,3,4";s:11:"reply_perms";s:7:"2,3,4,5";s:10:"read_perms";s:7:"1,2,4,5";s:12:"upload_perms";s:7:"1,3,4,5";s:14:"download_perms";s:7:"1,2,3,5";s:10:"show_perms";s:1:"*";}'));
+print_r(unserialize('a:6:{i:1;a:6:{s:10:"read_forum";i:1;s:10:"read_theme";i:1;s:11:"creat_theme";i:1;s:12:"answer_theme";i:1;s:12:"upload_files";i:1;s:14:"download_files";i:1;}i:2;a:6:{s:10:"read_forum";i:1;s:10:"read_theme";i:1;s:11:"creat_theme";i:1;s:12:"answer_theme";i:1;s:12:"upload_files";i:1;s:14:"download_files";i:1;}i:3;a:6:{s:10:"read_forum";i:1;s:10:"read_theme";i:1;s:11:"creat_theme";i:1;s:12:"answer_theme";i:1;s:12:"upload_files";i:1;s:14:"download_files";i:1;}i:4;a:6:{s:10:"read_forum";i:1;s:10:"read_theme";i:1;s:11:"creat_theme";i:1;s:12:"answer_theme";i:1;s:12:"upload_files";i:0;s:14:"download_files";i:1;}i:5;a:6:{s:10:"read_forum";i:1;s:10:"read_theme";i:1;s:11:"creat_theme";i:0;s:12:"answer_theme";i:0;s:12:"upload_files";i:0;s:14:"download_files";i:0;}i:6;a:6:{s:10:"read_forum";i:1;s:10:"read_theme";i:1;s:11:"creat_theme";i:0;s:12:"answer_theme";i:0;s:12:"upload_files";i:0;s:14:"download_files";i:0;}}'));
+exit();
+
 $last_limit_value = 0;
 $last_limit_query = "";
 

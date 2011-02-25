@@ -71,8 +71,8 @@ function get_member_id($name)
     global $lb_prefix, $lb_dbname, $sql_to;
     mysql_select_db($lb_dbname, $sql_to);
     $sql_result = mysql_query("SELECT member_id FROM ".$lb_prefix."_members WHERE name ='$name'", $sql_to) or die(mysql_error());
-    $result = mysql_result($sql_result, 0, 0);
-    return ($result) ? $result : -1;
+    $result = @mysql_result($sql_result, 0, 0);
+    return ($result) ? $result : 0;
 }
 
 function get_member_name($id)
@@ -80,7 +80,7 @@ function get_member_name($id)
     global $lb_prefix, $lb_dbname, $sql_to;
     mysql_select_db($lb_dbname, $sql_to);
     $sql_result = mysql_query("SELECT name FROM ".$lb_prefix."_members WHERE member_id = '$id'", $sql_to) or die(mysql_error());
-    $result = mysql_result($sql_result, 0, 0);
+    $result = @mysql_result($sql_result, 0, 0);
     return ($result) ? $result : "Удалён";
 }
 
@@ -248,8 +248,11 @@ function convert($params)
             allow_bbcode='1',
             allow_poll='".$forum['allow_poll']."',
             postcount='".$forum['inc_postcount']."',
-            last_post_member='".$forum['last_post_member']."',
-            last_post_member_id='".$users_id[$forum['last_post_member_id']]."',
+            topics_hiden='".$forum['queued_topics']."',
+            posts_hiden='".$forum['queued_posts']."',
+            last_post_member='".$forum['last_poster_name']."',
+            last_post_member_id='".$users_id[$forum['last_poster_id']]."',
+            last_title='".$forum['last_title']."',
             sort_order='$sort_order',
             posts='" . $forum['posts'] . "',
             rules='" . $forum['rules_text '] . "'
@@ -271,8 +274,10 @@ function convert($params)
         description  = '".mysql_escape_string($topic['description'])."',
         date_open = '".$topic['start_date']."',
         date_last = '".$topic['last_post']."',
-        state = '".$topic['status']."',
+        status = '".$topic['state']."',
         post_num = '".$topic['posts']."',
+        post_hiden = '".$topic['topic_queuedposts']."',
+        hiden = '".$topic['approved']."',
         views = '".$topic['views']."',
         last_post_member  = '".$topic['last_poster_id']."',
         member_name_open  = '".$topic['starter_name']."',
@@ -300,6 +305,7 @@ function convert($params)
         post_member_id = '".$user_id."',
         post_member_name = '".get_member_name($user_id)."',
         ip = '".$post['ip_address']."',
+		hide = '".$post['queued']."',
         edit_member_name = '".$post['edit_name']."',
         edit_member_id = '".get_member_id($post['edit_name'])."',
         edit_reason = '".mysql_escape_string($post['post_edit_reason'])."'
@@ -308,6 +314,7 @@ function convert($params)
     }
     echo "OK<br>";
 
+	echo "Update posts, topics, forums...";
     mysql_select_db($ipb_dbname, $sql_from);
     $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_topics") or die(mysql_error());
     $topics = fetch_array($sql_result);
@@ -319,7 +326,8 @@ function convert($params)
         mysql_query("UPDATE ".$lb_prefix."_topics SET post_id = '$first_post' WHERE id = '$topic_id'", $sql_to) or die(mysql_error());
         $sql_result = mysql_query("SELECT * FROM ".$lb_prefix."_posts WHERE topic_id = '$topic_id'", $sql_to) or die(mysql_error());
         $posts = fetch_array($sql_result);
-        $max_time = 0, $max_id = -1;
+        $max_time = 0;
+		$max_id = -1;
         foreach($posts as $post)
             if($post['post_date'] > $max_time)
             {
@@ -328,6 +336,46 @@ function convert($params)
             }
         mysql_query("UPDATE ".$lb_prefix."_topics SET last_post_id='$max_id' WHERE id='$topic_id'", $sql_to) or die(mysql_error());
     }
+	
+	mysql_select_db($ipb_dbname, $sql_from);
+	$sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_forums WHERE parent_id != '-1'", $sql_from) or die(mysql_error());
+	$forums = fetch_array($sql_result);
+	mysql_select_db($lb_dbname, $sql_to);
+	foreach($forums as $forum)
+	{
+		$last_topic_id = $topics_id[$forum['last_id']];
+		$forum_id = $forums_id[$forum['id']];
+		mysql_query("UPDATE ".$lb_prefix."_forums SET last_topic_id='$last_topic_id' WHERE id = '$forum_id'", $sql_to) or die(mysql_error());
+	}
+	
+	mysql_select_db($lb_dbname, $sql_to);
+	$sql_result = mysql_query("SELECT * FROM ".$lb_prefix."_forums WHERE parent_id != 0") or die(mysql_error());
+	$forums = fetch_array($sql_result);
+	foreach($forums as $forum)
+	{
+		$sql_result = mysql_query("SELECT * FROM ".$lb_prefix."_topics WHERE forum_id='".$forum['id']."'", $sql_to) or die(mysql_error());
+		$topics = fetch_array($sql_result);
+		foreach($topics as $topic)
+		{
+			$sql_result = mysql_query("SELECT * FROM ".$lb_prefix."_posts WHERE topic_id='".$topic['id']."'", $sql_to) or die(mysql_error());
+			$posts = fetch_array($sql_result);
+			$last_post_time = 0;
+			$last_post_id = -1;
+			foreach($posts as $post)
+			{
+				if($post['post_date'] > $last_post_time)
+				{
+					$last_post_time = $post['post_date'];
+					$last_post_id = $post['pid'];
+				}
+			}
+			mysql_query("UPDATE ".$lb_prefix."_forums SET last_post_date='$last_post_time', last_post_id='$last_post_id'
+				WHERE id ='".$forum['id']."'", $sql_to) or die(mysql_error());
+		}
+		mysql_query("UPDATE ".$lb_prefix."_forums SET topics='".count($topics)."' WHERE id = '".$forum['id']."'", $sql_to) or die(mysql_error());
+	}
+	
+	echo "OK";
 
 
 

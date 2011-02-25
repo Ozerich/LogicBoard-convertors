@@ -248,6 +248,8 @@ function convert($params)
             allow_bbcode='1',
             allow_poll='".$forum['allow_poll']."',
             postcount='".$forum['inc_postcount']."',
+            last_post_member='".$forum['last_post_member']."',
+            last_post_member_id='".$users_id[$forum['last_post_member_id']]."',
             sort_order='$sort_order',
             posts='" . $forum['posts'] . "',
             rules='" . $forum['rules_text '] . "'
@@ -269,6 +271,7 @@ function convert($params)
         description  = '".mysql_escape_string($topic['description'])."',
         date_open = '".$topic['start_date']."',
         date_last = '".$topic['last_post']."',
+        state = '".$topic['status']."',
         post_num = '".$topic['posts']."',
         views = '".$topic['views']."',
         last_post_member  = '".$topic['last_poster_id']."',
@@ -303,8 +306,30 @@ function convert($params)
         ", $sql_to) or die(mysql_error());
         $posts_id[$post['pid']] = mysql_insert_id();
     }
-
     echo "OK<br>";
+
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_topics") or die(mysql_error());
+    $topics = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($topics as $topic)
+    {
+        $first_post = $posts_id[$topic['topic_firstpost']];
+        $topic_id = $topics_id[$topic['tid']];
+        mysql_query("UPDATE ".$lb_prefix."_topics SET post_id = '$first_post' WHERE id = '$topic_id'", $sql_to) or die(mysql_error());
+        $sql_result = mysql_query("SELECT * FROM ".$lb_prefix."_posts WHERE topic_id = '$topic_id'", $sql_to) or die(mysql_error());
+        $posts = fetch_array($sql_result);
+        $max_time = 0, $max_id = -1;
+        foreach($posts as $post)
+            if($post['post_date'] > $max_time)
+            {
+                $max_time = $post['post_date'];
+                $max_id = $post['pid'];
+            }
+        mysql_query("UPDATE ".$lb_prefix."_topics SET last_post_id='$max_id' WHERE id='$topic_id'", $sql_to) or die(mysql_error());
+    }
+
+
 
 
 

@@ -12,10 +12,6 @@ $status = array(
     "NO_ERROR" => "Форум успешно перенесён. Удалите этот файл!",
 );
 
-print_r(unserialize('a:6:{s:11:"start_perms";s:7:"1,2,3,4";s:11:"reply_perms";s:7:"2,3,4,5";s:10:"read_perms";s:7:"1,2,4,5";s:12:"upload_perms";s:7:"1,3,4,5";s:14:"download_perms";s:7:"1,2,3,5";s:10:"show_perms";s:1:"*";}'));
-print_r(unserialize('a:6:{i:1;a:6:{s:10:"read_forum";i:1;s:10:"read_theme";i:1;s:11:"creat_theme";i:1;s:12:"answer_theme";i:1;s:12:"upload_files";i:1;s:14:"download_files";i:1;}i:2;a:6:{s:10:"read_forum";i:1;s:10:"read_theme";i:1;s:11:"creat_theme";i:1;s:12:"answer_theme";i:1;s:12:"upload_files";i:1;s:14:"download_files";i:1;}i:3;a:6:{s:10:"read_forum";i:1;s:10:"read_theme";i:1;s:11:"creat_theme";i:1;s:12:"answer_theme";i:1;s:12:"upload_files";i:1;s:14:"download_files";i:1;}i:4;a:6:{s:10:"read_forum";i:1;s:10:"read_theme";i:1;s:11:"creat_theme";i:1;s:12:"answer_theme";i:1;s:12:"upload_files";i:0;s:14:"download_files";i:1;}i:5;a:6:{s:10:"read_forum";i:1;s:10:"read_theme";i:1;s:11:"creat_theme";i:0;s:12:"answer_theme";i:0;s:12:"upload_files";i:0;s:14:"download_files";i:0;}i:6;a:6:{s:10:"read_forum";i:1;s:10:"read_theme";i:1;s:11:"creat_theme";i:0;s:12:"answer_theme";i:0;s:12:"upload_files";i:0;s:14:"download_files";i:0;}}'));
-exit();
-
 $last_limit_value = 0;
 $last_limit_query = "";
 
@@ -131,10 +127,7 @@ function convert($params)
 
     $groups_key = array("4"=>"1","6"=>"2","3"=>"4","2"=>"5","1"=>"6");
 
-    $users_id = array();
-    $forums_id = array();
-    $topics_id = array();
-    $posts_id = array();
+    $groups_masks = $users_id = $forums_id = $topics_id = $posts_id = array();
 
 
     echo "Groups...";
@@ -147,12 +140,33 @@ function convert($params)
         if($group['g_id'] == '5')continue;
         $lb_group_id = isset($groups_key[$group['g_id']]) ? $groups_key[$group['g_id']] : $group['g_id'];
 
+        $access = array();
+        $access['local_opentopic'] = $group['g_open_close_posts'];
+        $access['local_closetopic'] = $group['g_open_close_posts'];
+        $access['local_deltopic'] = $group['g_delete_own_topics'];
+        $access['local_titletopic'] = $group['g_edit_topic'];
+        $access['local_polltopic'] = $group['g_edit_topic'];
+        $access['local_delpost'] = $group['g_delete_own_posts'];
+        $access['local_changepost'] = $group['g_edit_posts'];
+
         mysql_query("INSERT INTO ".$lb_prefix."_groups SET
         g_id = '$lb_group_id',
         g_title = '".mysql_escape_string($group['g_title'])."',
         g_prefix_st = '".mysql_escape_string($group['prefix'])."',
+        g_supermoders = '".$group['g_is_supmod']."',
+        g_access_cc = '".$group['g_access_cp']."',
+        g_show_close_f = '".$group['g_access_offline']."',
+        g_access  = '".serialize($access)."',
+        g_show_profile = '".$group['g_mem_info']."',
+        g_new_topic = '".$group['g_post_new_topics']."',
+        g_reply_topic = '".$group['g_reply_other_topics']."',
+        g_reply_close = '".$group['g_post_closed']."',
+        g_pm = '".$group['g_use_pm']."',
+        g_maxpm = '".$group['g_max_messages']."',
+        g_search = '".$group['g_use_search']."',
         g_prefix_end = '".mysql_escape_string($group['suffix'])."'"
            , $sql_to) or die(mysql_error());
+        $groups_masks[$group['g_id']] = explode(',',$group['g_perm_id']);
     }
     echo "OK<br/>";
 
@@ -234,34 +248,107 @@ function convert($params)
     }
     echo "OK<br/>";
 
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_forum_perms", $sql_from) or die(mysql_error());
+    $group_masks_ = fetch_array($sql_result);
+    $group_masks = array();
+    foreach($group_masks_ as $group)
+        $group_masks[] = $group['perm_id'];
 
     echo "Forums...";
     mysql_select_db($ipb_dbname, $sql_from);
-    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_forums WHERE parent_id != '-1' ORDER BY id ASC") or die(mysql_error());
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_forums WHERE parent_id != '-1' ORDER BY id ASC", $sql_from) or die(mysql_error());
     $forums = fetch_array($sql_result);
     mysql_select_db($lb_dbname, $sql_to);
+    $group_template = array();
+    $group_names = array("read_forum","read_theme","creat_theme","answer_theme","upload_files","download_files");
+    $sql_result = mysql_query("SELECT * FROM ".$lb_prefix."_groups ORDER BY g_id ASC", $sql_to) or die(mysql_error());
+    $groups = fetch_array($sql_result);
+    foreach($groups as $group)
+    {
+        $id = $group['g_id'];
+        $group_template[$id] = array();
+        foreach($group_names as $name)
+            $group_template[$id][$name] = 0;
+    }
     foreach($forums as $forum)
     {
-            $sort_order = $forum['sort_order'] == 'Z-A' ? 'DESC' : 'ASC';
-            mysql_query("INSERT INTO " . $lb_prefix . "_forums SET
+        $old_permissions = unserialize(str_replace('\\','',$forum['permission_array']));
+        $permissions = $group_template;
+        $mask_permissions = array();
+
+        foreach ($group_masks as $mask_id)
+        {
+            $mask_permissions[$mask_id] = array();
+            foreach($old_permissions as $item_key => $item_value)
+                $mask_permissions[$mask_id][$item_key] = 0;
+        }
+        foreach ($old_permissions as $key => $value)
+        {
+            if(strlen($value) == 0)
+                continue;
+            if($value == "*")
+            {
+                $value = "";
+                foreach($group_masks as $group)
+                    $value .= $group .",";
+                $value = substr($value, 0, -1);
+            }
+            $value = explode(",", $value);
+            foreach($value as $item)
+                $mask_permissions[$item][$key] = 1;
+        }
+        foreach($groups_masks as $group_id => $group_value)
+        {
+            if($group_id == 5)continue;
+            $lb_group_id = (isset($groups_key[$group_id])) ? $groups_key[$group_id] : $group_id;
+            foreach($groups_masks[$group_id] as $mask_id)
+            {
+                $mask = $mask_permissions[$mask_id];
+                foreach($mask as $mask_key => $mask_value)
+                {
+                    if($mask_value == 0)
+                        continue;
+                    if($mask_key == "start_perms")
+                        $permissions[$lb_group_id]['creat_theme'] = 1;
+                    if($mask_key == "reply_perms")
+                        $permissions[$lb_group_id]['answer_theme'] = 1;
+                    if($mask_key == "read_perms")
+                        $permissions[$lb_group_id]['read_theme'] = 1;
+                    if($mask_key == "upload_perms")
+                        $permissions[$lb_group_id]['upload_files'] = 1;
+                    if($mask_key == "download_perms")
+                        $permissions[$lb_group_id]['download_files'] = 1;
+                    if($mask_key == "show_perms")
+                        $permissions[$lb_group_id]['read_forum'] = 1;
+
+                }
+            }
+        }
+        foreach($permissions[3] as $key=>$value)
+            $permissions[3][$key] = 1;
+
+        $sort_order = $forum['sort_order'] == 'Z-A' ? 'DESC' : 'ASC';
+        mysql_query("INSERT INTO " . $lb_prefix . "_forums SET
             posi='" . $forum['position'] . "',
             parent_id='" . $forums_id[$forum['parent_id']] . "',
             title='" . mysql_escape_string($forum['name']) . "',
             alt_name='" . mysql_escape_string(translit($forum['name'])) . "',
             description='" . mysql_escape_string($forum['description']) . "',
             allow_bbcode='1',
-            allow_poll='".$forum['allow_poll']."',
-            postcount='".$forum['inc_postcount']."',
-            topics_hiden='".$forum['queued_topics']."',
-            posts_hiden='".$forum['queued_posts']."',
-            last_post_member='".$forum['last_poster_name']."',
-            last_post_member_id='".$users_id[$forum['last_poster_id']]."',
-            last_title='".$forum['last_title']."',
+            allow_poll='" . $forum['allow_poll'] . "',
+            postcount='" . $forum['inc_postcount'] . "',
+            topics_hiden='" . $forum['queued_topics'] . "',
+            posts_hiden='" . $forum['queued_posts'] . "',
+           	group_permission = '".serialize($permissions)."',
+            last_post_member='" . $forum['last_poster_name'] . "',
+            last_post_member_id='" . $users_id[$forum['last_poster_id']] . "',
+            last_title='" . $forum['last_title'] . "',
             sort_order='$sort_order',
             posts='" . $forum['posts'] . "',
             rules='" . $forum['rules_text '] . "'
             ", $sql_to) or die(mysql_error());
-            $forums_id[$forum['id']] = mysql_insert_id();
+        $forums_id[$forum['id']] = mysql_insert_id();
     }
     echo "OK<br/>";
 

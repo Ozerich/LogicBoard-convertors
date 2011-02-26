@@ -180,7 +180,7 @@ function convert($params)
     echo "Groups...";
     //groups
     mysql_select_db($dle_dbname, $sql_from);
-    $sql_result = mysql_query("SELECT * FROM " . $dle_prefix . "_usergroups ORDER by id ASC") or die(mysql_error());
+    $sql_result = mysql_query("SELECT * FROM " . $dle_prefix . "_usergroups ORDER by id ASC", $sql_from) or die(mysql_error());
     $result = fetch_array($sql_result);
     mysql_select_db($lb_dbname, $sql_to);
     $groups_count = 0;

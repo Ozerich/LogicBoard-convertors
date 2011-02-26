@@ -3,6 +3,8 @@
 set_time_limit(0);
 ini_set('memory_limit', '512M');
 
+require_once "include/parser.php";
+
 $status = array(
     "MYSQL_FROM_ERROR" => "Невозможно подлючиться к MySQL серверу IPB форума",
     "MYSQL_TO_ERROR" => "Невозможно подлючиться к MySQL серверу LogicBoard",
@@ -11,6 +13,7 @@ $status = array(
     "BAD_SITEPATH" => "Неправильный формат адреса сайта",
     "NO_ERROR" => "Форум успешно перенесён. Удалите этот файл!",
 );
+        
 
 $last_limit_value = 0;
 $last_limit_query = "";
@@ -328,6 +331,7 @@ function convert($params)
         foreach($permissions[3] as $key=>$value)
             $permissions[3][$key] = 1;
 
+
         $sort_order = $forum['sort_order'] == 'Z-A' ? 'DESC' : 'ASC';
         mysql_query("INSERT INTO " . $lb_prefix . "_forums SET
             posi='" . $forum['position'] . "',
@@ -390,7 +394,7 @@ function convert($params)
         mysql_query("INSERT INTO ".$lb_prefix."_posts SET
         topic_id = '".$topics_id[$post['topic_id']]."',
         new_topic = '".$post['new_topic']."',
-        text = '".mysql_escape_string($post['post'])."',
+        text = '".mysql_escape_string(ipb_to_lb($post['post'], $site_path))."',
         post_date = '".$post['post_date']."',
         edit_date = '".$post['edit_time']."',
         post_member_id = '".$user_id."',

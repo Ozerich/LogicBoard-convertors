@@ -42,8 +42,7 @@ function bb_text($text, $site)
     }
 
     $text = preg_replace('#<strike>(.+?)</strike>#sui', '[s]\\1[/s]', $text);
-
-    $text = preg_replace("#<!--quoteo--><div class='quotetop'>.+?</div><div class='quotemain'><!--quotec-->(.+?)<!--QuoteEnd--></div><!--QuoteEEnd-->#sui",
+                                     $text = preg_replace("#<!--quoteo.*?--><div class='quotetop'>.+?</div><div class='quotemain'><!--quotec-->(.+?)<!--QuoteEnd--></div><!--QuoteEEnd-->#sui",
         "[quote]\\1[/quote]", $text);
 
     $text = preg_replace("#<a href='index.php\?showtopic=(\d+)'>(.+?)</a>#sui", '[url='.$site.'?do=board&op=topic&id=\\1]\\2[/url]', $text);

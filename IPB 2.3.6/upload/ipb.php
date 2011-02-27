@@ -378,6 +378,7 @@ function convert($params)
         post_num = '".$topic['posts']."',
         post_hiden = '".$topic['topic_queuedposts']."',
         hiden = '".$topic['approved']."',
+        fixed = '".$topic['pinned']."',
         views = '".$topic['views']."',
         last_post_member  = '".$topic['last_poster_id']."',
         member_name_open  = '".$topic['starter_name']."',
@@ -926,4 +927,3 @@ function convert($params)
 </form>
 </body>
 </html>
-?>

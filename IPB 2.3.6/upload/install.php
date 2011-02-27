@@ -64,9 +64,9 @@ function install($handle, $db_name, $table_prefix)
       KEY `reg_status` (`reg_status`)
     ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;", $handle);
 
-        mysql_query("INSERT INTO ".$table_prefix."_members (member_id, name, password, secret_key, email, member_group, lastdate, reg_date, ip, personal_title, reg_status, avatar, fullname, town, b_day, b_month, b_year, sex, about, count_warning, signature, skype, icq, twitter, vkontakte, limit_publ, banned, topics_num, posts_num, pm_folders, pm_new, favorite, subscribe, mf_options, pm_count, reputation, reputation_freeze, mstatus) VALUES
+       /* mysql_query("INSERT INTO ".$table_prefix."_members (member_id, name, password, secret_key, email, member_group, lastdate, reg_date, ip, personal_title, reg_status, avatar, fullname, town, b_day, b_month, b_year, sex, about, count_warning, signature, skype, icq, twitter, vkontakte, limit_publ, banned, topics_num, posts_num, pm_folders, pm_new, favorite, subscribe, mf_options, pm_count, reputation, reputation_freeze, mstatus) VALUES
 (1, 'debug', '398ac9dbe309ef51ebbde4bd53df99e3', '398ac9dbe309ef51ebbde4bd53df99e3', '11', 1, 1298461734, 0, '1718.120.54.86', 'Администратор', '1', '', '', 'Минск', 1, 2, 2007, '0', 'О себе', 2, 'Signature', '', 465033557, '', '', 0, 0, 0, 1, '', 0, '', '', '', 0, 0, 0, 0);
-") or die(mysql_error());
+") or die(mysql_error());  */
 
 $table_name = $table_prefix."_groups";
 @mysql_query("DROP TABLE $table_name", $handle);

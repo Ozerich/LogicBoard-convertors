@@ -216,6 +216,143 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   KEY `ip` (`ip`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;", $handle);
 
+$table_name = $table_prefix."_topics_poll";
+@mysql_query("DROP TABLE $table_name", $handle);
+mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
+  `id` int(10) NOT NULL AUTO_INCREMENT,
+  `tid` int(10) NOT NULL DEFAULT '0',
+  `vote_num` mediumint(8) NOT NULL DEFAULT '0',
+  `title` varchar(255) NOT NULL DEFAULT '',
+  `question` varchar(255) NOT NULL DEFAULT '',
+  `variants` text NOT NULL,
+  `multiple` tinyint(1) NOT NULL DEFAULT '0',
+  `open_date` int(10) NOT NULL DEFAULT '0',
+  `answers` text NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `tid` (`tid`),
+  KEY `vote_num` (`vote_num`),
+  KEY `open_date` (`open_date`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;", $handle);
+
+$table_name = $table_prefix."_topics_poll_logs";
+@mysql_query("DROP TABLE $table_name", $handle);
+mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `poll_id` int(10) NOT NULL DEFAULT '0',
+  `ip` varchar(16) NOT NULL DEFAULT '',
+  `member_id` mediumint(8) NOT NULL DEFAULT '0',
+  `log_date` int(10) NOT NULL DEFAULT '0',
+  `answer` varchar(255) NOT NULL DEFAULT '',
+  `member_name` varchar(40) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `poll_id` (`poll_id`),
+  KEY `member_id` (`member_id`),
+  KEY `log_date` (`log_date`),
+  KEY `answer` (`answer`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=15 ;", $handle);
+
+$table_name = $table_prefix."_members_ranks";
+@mysql_query("DROP TABLE $table_name", $handle);
+mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
+  `id` mediumint(8) NOT NULL AUTO_INCREMENT,
+  `title` varchar(255)  NOT NULL DEFAULT '',
+  `post_num` int(10) NOT NULL DEFAULT '0',
+  `stars` varchar(255)  NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `title` (`title`),
+  KEY `post_num` (`post_num`),
+  KEY `stars` (`stars`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8;", $handle);
+
+
+$table_name = $table_prefix."_topics_files";
+mysql_query("DROP TABLE $table_name", $handle);
+mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
+  `file_id` mediumint(8) NOT NULL auto_increment,
+  `file_title` varchar(255) NOT NULL default '',
+  `file_name` varchar(255) NOT NULL default '',
+  `file_type` varchar(255) NOT NULL default '',
+  `file_mname` varchar(255) NOT NULL default '',
+  `file_mid` varchar(255) NOT NULL default '',
+  `file_date` int(10) NOT NULL default '0',
+  `file_size` int(11) NOT NULL default '0',
+  `file_count` int(11) NOT NULL default '0',
+  `file_fid` smallint(5) NOT NULL default '0',
+  `file_tid` int(10) NOT NULL default '0',
+  `file_pid` int(10) NOT NULL default '0',
+  `file_convert` tinyint(1) NOT NULL default '0',
+  PRIMARY KEY  (`file_id`),
+  KEY `file_mid` (`file_mid`),
+  KEY `file_fid` (`file_fid`),
+  KEY `file_tid` (`file_tid`),
+  KEY `file_pid` (`file_pid`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+", $handle);
+
+$table_name = $table_prefix."_members_warning";
+mysql_query("DROP TABLE $table_name", $handle);
+mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
+ `id` mediumint(8) NOT NULL auto_increment,
+  `mid` mediumint(8) NOT NULL default '0',
+  `moder_id` mediumint(8) NOT NULL default '0',
+  `moder_name` varchar(40) NOT NULL default '',
+  `date` int(10) NOT NULL default '0',
+  `description` text NOT NULL,
+  `st_w` tinyint(1) NOT NULL default '1',
+  PRIMARY KEY  (`id`),
+  KEY `mid` (`mid`),
+  KEY `st_w` (`st_w`),
+  KEY `moder_id` (`moder_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+", $handle);
+
+
+$table_name = $table_prefix."_members_banfilters";
+@mysql_query("DROP TABLE $table_name", $handle);
+mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
+  `id` mediumint(8) NOT NULL AUTO_INCREMENT,
+  `type` varchar(20)  DEFAULT '',
+  `description` text  NOT NULL,
+  `date` int(10) DEFAULT '0',
+  `moder_desc` text NOT NULL,
+  `date_end` int(10) DEFAULT '0',
+  `ban_days` smallint(4) NOT NULL DEFAULT '0',
+  `ban_member_id` mediumint(8) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `type` (`type`),
+  KEY `date` (`date`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;", $handle);
+
+$table_name = $table_prefix."_forums_moderator";
+@mysql_query("DROP TABLE $table_name", $handle);
+mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
+  `fm_id` mediumint(8) NOT NULL AUTO_INCREMENT,
+  `fm_forum_id` int(11) NOT NULL DEFAULT '0',
+  `fm_member_id` mediumint(8) NOT NULL DEFAULT '0',
+  `fm_member_name` varchar(40) NOT NULL DEFAULT '',
+  `fm_group_id` mediumint(8) NOT NULL DEFAULT '0',
+  `fm_is_group` tinyint(1) NOT NULL DEFAULT '0',
+  `fm_permission` text NOT NULL,
+  PRIMARY KEY (`fm_id`),
+  KEY `fm_forum_id` (`fm_forum_id`),
+  KEY `fm_member_id` (`fm_member_id`),
+  KEY `fm_member_name` (`fm_member_name`),
+  KEY `fm_group_id` (`fm_group_id`),
+  KEY `fm_is_group` (`fm_is_group`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;", $handle);
+
+$table_name = $table_prefix."_topics_subscribe";
+@mysql_query("DROP TABLE $table_name", $handle);
+mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
+  `id` int(10) NOT NULL AUTO_INCREMENT,
+  `subs_member` mediumint(8) NOT NULL DEFAULT '0',
+  `topic` mediumint(8) NOT NULL DEFAULT '0',
+  `date` int(10) NOT NULL DEFAULT '0',
+  `pm_topic` int(9) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `subs_member` (`subs_member`),
+  KEY `topic` (`topic`),
+  KEY `date` (`date`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8;", $handle);
 
 }
-

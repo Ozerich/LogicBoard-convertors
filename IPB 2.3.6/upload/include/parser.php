@@ -46,10 +46,8 @@ function bb_text($text, $site)
     $text = preg_replace("#<!--quoteo--><div class='quotetop'>.+?</div><div class='quotemain'><!--quotec-->(.+?)<!--QuoteEnd--></div><!--QuoteEEnd-->#sui",
         "[quote]\\1[/quote]", $text);
 
-    print_r($text."<br><br><br>");
-
     $text = preg_replace("#<a href='index.php\?showtopic=(\d+)'>(.+?)</a>#sui", '[url='.$site.'?do=board&op=topic&id=\\1]\\2[/url]', $text);
-    //$text = preg_replace("#<a href='index.php\?act=findpost&pid=(\d+)'>(.+?)</a>#sui", '[url='.$site.'?do=board&op=post&id=\\1]\\2[/url]', $text);
+    $text = preg_replace("#<a href='index.php\?act=findpost&pid=(\d+)'>(.+?)</a>#sui", '', $text);
     $text = preg_replace("#<div class='codetop'>.+?</div><div class='codemain' style='height:200px;white-space:pre;overflow:auto'>(.+?)</div>#sui",
        '[code]\\1[/code]', $text);
     $text = preg_replace("#<span style='color:\#000000;background:\#000000'>(.+?)</span>#sui", '[spoiler]\\1[/spoiler]', $text);

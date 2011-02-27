@@ -5,6 +5,7 @@ ini_set('memory_limit', '512M');
 
 require_once "include/parser.php";
 
+
 $status = array(
     "MYSQL_FROM_ERROR" => "Невозможно подлючиться к MySQL серверу IPB форума",
     "MYSQL_TO_ERROR" => "Невозможно подлючиться к MySQL серверу LogicBoard",
@@ -13,7 +14,7 @@ $status = array(
     "BAD_SITEPATH" => "Неправильный формат адреса сайта",
     "NO_ERROR" => "Форум успешно перенесён. Удалите этот файл!",
 );
-        
+   		
 
 $last_limit_value = 0;
 $last_limit_query = "";
@@ -130,7 +131,7 @@ function convert($params)
 
     $groups_key = array("4"=>"1","6"=>"2","3"=>"4","2"=>"5","1"=>"6");
 
-    $groups_masks = $users_id = $forums_id = $topics_id = $posts_id = array();
+    $groups_masks = $users_id = $forums_id = $topics_id = $posts_id = $posts_key = $posts_attachment = $users_ban = $users_group = array();
 
 
     echo "Groups...";
@@ -202,6 +203,10 @@ function convert($params)
         posts_num = '".$user['posts']."'"
         ,$sql_to) or die(mysql_error());
         $users_id[$user['id']] = mysql_insert_id();
+        $users_group[mysql_insert_id()] = $group;
+
+        if($user['temp_ban'] != "")
+            $users_ban[mysql_insert_id()] = $user['temp_ban'];
     }
     mysql_select_db($ipb_dbname, $sql_from);
     $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_member_extra", $sql_from) or die(mysql_error());
@@ -405,7 +410,8 @@ function convert($params)
         edit_member_id = '".get_member_id($post['edit_name'])."',
         edit_reason = '".mysql_escape_string($post['post_edit_reason'])."'
         ", $sql_to) or die(mysql_error());
-        $posts_id[$post['pid']] = mysql_insert_id();
+        $posts_id[$post['pid']] = $posts_key[$post['post_key']] = mysql_insert_id();
+        $posts_attachment[mysql_insert_id()] = 0;
     }
     echo "OK<br>";
 
@@ -469,9 +475,278 @@ function convert($params)
 		}
 		mysql_query("UPDATE ".$lb_prefix."_forums SET topics='".count($topics)."' WHERE id = '".$forum['id']."'", $sql_to) or die(mysql_error());
 	}
-	
-	echo "OK";
 
+    echo "OK<br/>";
+    echo "Polls...";
+
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_polls", $sql_from) or die(mysql_error());
+    $polls = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($polls as $poll)
+    {
+        $topic_id = $topics_id[$poll['tid']];
+        $choises_text = stripslashes($poll['choices']);
+        preg_match('#(.+?)"votes"#sui', $choises_text, $text);
+        preg_match_all('#"(.+?)"#sui', $text[1], $choises);
+        $question = $choises[1][1];
+        $variants = "";
+        $multiple = ($choises[1][2] == "multi") ? 1 : 0;
+        $beg = ($choises[1][2] == "multi") ? 4 : 3;
+        for($i = $beg; $i < count($choises[1]); $i++)
+        {
+            $variants .= $choises[1][$i];
+            if($i < count($choises[1]) - 1)
+                $variants .= "\r\n";
+        }
+        preg_match('#"votes"(.+?)}#sui', $choises_text, $choises_text);
+        $answers_text = "";
+        preg_match_all('#i:\d+;i:(\d+);#sui', $choises_text[1], $answers);
+        for($i = 0; $i < count($answers[1]); $i++)
+            if($answers[1][$i] != 0)
+                $answers_text .= $i.":".$answers[1][$i]."|";
+        if(strlen($answers_text) > 0)
+            $answers_text = substr($answers_text, 0, -1);
+
+
+        mysql_query("INSERT INTO ".$lb_prefix."_topics_poll SET
+        tid='$topic_id',
+        vote_num='".$poll['votes']."',
+        open_date='".$poll['start_date']."',
+        title='".mysql_escape_string($poll['poll_question'])."',
+        question='".mysql_escape_string($question)."',
+        multiple='".$multiple."',
+        variants ='".mysql_escape_string($variants)."',
+        answers ='".mysql_escape_string($answers_text)."'"
+
+        , $sql_to) or die(mysql_error());
+
+        mysql_query("UPDATE ".$lb_prefix."_topics SET poll_id='".mysql_insert_id()."' WHERE id='$topic_id'", $sql_to) or
+                    die(mysql_error());
+    }
+
+    echo "OK<br>";
+    echo "Poll logs...";
+
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_voters", $sql_from) or die(mysql_error());
+    $logs = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($logs as $log)
+    {
+        $sql_result = mysql_query("SELECT poll_id FROM ".$lb_prefix."_topics WHERE id='".$topics_id[$log['tid']]."'", $sql_to) or die(mysql_error());
+        $poll_id = mysql_result($sql_result, 0, 0);
+        mysql_query("INSERT INTO ".$lb_prefix."_topics_poll_logs SET
+        poll_id = '$poll_id',
+        ip = '".$log['ip_address']."',
+        log_date = '".$log['vote_date']."',
+        member_id = '".$users_id[$log['member_id']]."',
+        member_name = '".get_member_name($users_id[$log['member_id']])."'
+        ", $sql_to) or die(mysql_error());
+    }
+
+    echo "OK<br/>";
+    echo "Attachments...";
+
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_attachments", $sql_from) or die(mysql_error());
+    $attachments = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($attachments as $attachment)
+    {
+        $post_id = $posts_key[$attachment['attach_post_key']];
+        if(!$post_id)
+            continue;
+
+        $sql_result = mysql_query("SELECT topic_id FROM ".$lb_prefix."_posts WHERE pid='$post_id'", $sql_to) or die(mysql_error());
+        $topic_id = mysql_result($sql_result, 0, 0);
+        $sql_result = mysql_query("SELECT forum_id FROM ".$lb_prefix."_topics WHERE id='$topic_id'", $sql_to) or die(mysql_error());
+        $forum_id = mysql_result($sql_result, 0, 0);
+
+        mysql_query("INSERT INTO ".$lb_prefix."_topics_files SET
+        file_title = '".mysql_escape_string($attachment['attach_file'])."',
+        file_name = '".mysql_escape_string($attachment['attach_location'])."',
+        file_type = '".$attachment['attach_ext']."',
+        file_mname = '".get_member_name($users_id[$attachment['attach_member_id']])."',
+        file_mid = '".$users_id[$attachment['attach_member_id']]."',
+        file_date = '".$attachment['attach_date']."',
+        file_size = '".$attachment['attach_filesize']."',
+        file_fid = '$forum_id',
+        file_tid = '$topic_id',
+        file_pid = '$post_id'
+        ", $sql_to) or die(mysql_error());
+
+        $sql_result = mysql_query("SELECT text FROM ".$lb_prefix."_posts WHERE pid='$post_id'", $sql_to) or die(mysql_error());
+        $text = mysql_result($sql_result, 0, 0);
+        if($posts_attachment[$post_id] == 0)
+        {
+            $text .= "<br/>";
+            $posts_attachment[$post_id] = 1;
+        }
+        $text .= "<br/>[attachment=".mysql_insert_id()."]";
+        mysql_query("UPDATE ".$lb_prefix."_posts SET text='".mysql_escape_string($text)."' WHERE pid='$post_id'", $sql_to) or die(mysql_error());
+    }
+    mysql_select_db($lb_dbname, $sql_to);
+    $sql_result = get_limit_query("SELECT * FROM " . $lb_prefix . "_posts", $sql_to);
+    $posts = fetch_array($sql_result);
+    foreach ($posts as $post)
+    {
+        $post_id = $post['pid'];
+        $sql_result = mysql_query("SELECT * FROM " . $lb_prefix . "_topics_files WHERE file_pid='$post_id'", $sql_to) or die(mysql_error());
+        $files = fetch_array($sql_result);
+        $text = '';
+        foreach ($files as $file)
+            $text .= $file['file_id'] . ",";
+        if (strlen($text) > 0)
+            $text = substr($text, 0, -1);
+        mysql_query("UPDATE " . $lb_prefix . "_posts SET attachments='$text' WHERE pid='" . $post['pid'] . "'", $sql_to) or die(mysql_error());
+    }
+
+    echo "OK<br/>";
+    echo "Ranks...";
+
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_titles", $sql_from) or die(mysql_error());
+    $ranks = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($ranks as $rank)
+    {
+        mysql_query("INSERT INTO ".$lb_prefix."_members_ranks SET
+        title='".mysql_escape_string($rank['title'])."',
+        post_num='".$rank['posts']."',
+        stars='".$rank['pips']."'
+        ", $sql_to) or die(mysql_error());
+    }
+
+    echo "OK<br/>";
+    echo "Warning logs...";
+
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_warn_logs",$sql_from) or die(mysql_error());
+    $logs = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($logs as $log)
+    {
+        $mode = $log['wlog_type'] == "neg" ? -1 : 0;
+        $text = $log['wlog_notes'];
+        preg_match('#<content>(.+?)</content>#sui', $text, $text);
+        mysql_query("INSERT INTO ".$lb_prefix."_members_warning SET
+        mid = '".$users_id[$log['wlog_mid']]."',
+        moder_id = '".$users_id[$log['wlog_addedby']]."',
+        moder_name = '".get_member_name($users_id[$log['wlog_addedby']])."',
+        date = '".$log['wlog_date']."',
+        description = '".mysql_escape_string($text[1])."',
+        st_w = '$mode'
+        ", $sql_to) or die(mysql_error());
+    }
+    echo "OK<br/>";
+
+    echo "Ban filters...";
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_banfilters", $sql_from) or die(mysql_error());
+    $filters = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($filters as $filter)
+    {
+        mysql_query("INSERT INTO ".$lb_prefix."_members_banfilters SET
+        type='".$filter['ban_type']."',
+        description='".mysql_escape_string($filter['ban_content'])."',
+        date='".$filter['ban_date']."'
+        ", $sql_to) or die(mysql_error());
+    }
+
+
+    echo "OK<br/>";
+    echo "Ban members...";
+
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($users_ban as $user_id=>$info)
+    {
+        $info = explode(":", $info);
+        $days = $info[3] == "h" ? 1 : $info[2];
+        mysql_query("INSERT INTO ".$lb_prefix."_members_banfilters SET
+        type='name',
+        description='".get_member_name($user_id)."',
+        date = '".$info[0]."',
+        date_end = '".$info[1]."',
+        ban_days = '$days',
+        ban_member_id = '$user_id'
+        ", $sql_to) or die(mysql_error());
+    }
+
+    echo "OK<br/>";
+    echo "Moderators...";
+
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_moderators", $sql_from) or die(mysql_error());
+    $moderators = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($moderators as $moder)
+    {
+        if($moder['member_id'] != -1)
+        {
+            $member_id = $users_id[$moder['member_id']];
+            $member_name = get_member_name($member_id);
+            $group_id = $users_group[$member_id];
+            $is_group = 0;
+        }
+        else
+        {
+           $member_id = 0;
+           $member_name = "";
+           if($moder['group_id'] == '5')continue;
+           $group_id = isset($groups_key[$moder['group_id']]) ? $groups_key[$moder['group_id']] : $moder['group_id'];
+           $is_group = 1;
+        }
+
+        $hide = ($moder['topic_q'] == 1 && $moder['post_q'] == 1) ? 1 : 0;
+
+        $permissions = array();
+        $permissions['global_hideshow'] = $hide;
+        $permissions['global_hidetopic'] = $hide;
+        $permissions['global_deltopic'] = $moder['delete_topic'];
+        $permissions['global_titletopic'] = $moder['edit_topic'];
+        $permissions['global_polltopic'] = $moder['edit_post'];
+        $permissions['global_opentopic'] = $moder['open_topic'];
+        $permissions['global_closetopic'] = $moder['close_topic'];
+        $permissions['global_fixtopic'] = $moder['pin_topic'];
+        $permissions['global_unfixtopic'] = $moder['unpin_topic'];
+        $permissions['global_movetopic'] = $moder['move_topic'];
+        $permissions['global_uniontopic'] = $moder['split_merge'];
+        $permissions['global_delpost'] = $moder['delete_post'];
+        $permissions['global_unionpost'] = $moder['edit_post'];
+        $permissions['global_changepost'] = $moder['edit_post'];
+        $permissions['global_movepost'] = $moder['edit_post'];
+        $permissions['global_fixedpost'] = $moder['edit_post'];
+
+
+        mysql_query("INSERT INTO ".$lb_prefix."_forums_moderator SET
+        fm_forum_id = '".$forums_id[$moder['forum_id']]."',
+        fm_member_id = '$member_id',
+        fm_member_name = '$member_name',
+        fm_group_id = '$group_id',
+        fm_is_group = '$is_group',
+        fm_permission = '".serialize($permissions)."'
+        ", $sql_to) or die(mysql_error());
+    }
+
+    echo "OK<br/>";
+    echo "Subscribe...";
+
+    mysql_select_db($ipb_dbname, $sql_from);
+    $sql_result = mysql_query("SELECT * FROM ".$ipb_prefix."_tracker", $sql_from) or die(mysql_error());
+    $subscribes = fetch_array($sql_result);
+    mysql_select_db($lb_dbname, $sql_to);
+    foreach($subscribes as $subscribe)
+    {
+        mysql_query("INSERT INTO ".$lb_prefix."_topics_subscribe SET
+        subs_member = '".$users_id[$subscribe['member_id']]."',
+        topic = '".$topics_id[$subscribe['topic_id']]."',
+        date = '".$subscribe['start_date']."'
+        ", $sql_to) or die(mysql_error());
+    }
+
+    echo "OK<br/><br/>";
 
 
 
@@ -651,3 +926,4 @@ function convert($params)
 </form>
 </body>
 </html>
+?>

@@ -130,7 +130,8 @@ function convert($params)
 
     $groups_key = array("4" => "1", "6" => "2", "3" => "4", "2" => "5", "1" => "6");
 
-    $groups_masks = $users_id = $forums_id = $topics_id = $posts_id = $posts_key = $posts_attachment = $users_ban = $users_group = array();
+    $groups_masks = $users_id = $forums_id = $topics_id = $posts_id = $posts_key = $posts_attachment =
+        $post_files = $users_ban = $users_group = array();
 
 
     echo "Groups...";
@@ -184,8 +185,8 @@ function convert($params)
         mysql_select_db($lb_dbname, $sql_to);
         foreach ($users as $user)
         {
-            if ($user['mgroup'] == 5) continue;
-            $group = (isset($groups_key[$user['mgroup']])) ? $groups_key[$user['mgroup']] : $user['mgroup'];
+            if ($user['member_group_id'] == 5) continue;
+            $group = (isset($groups_key[$user['member_group_id']])) ? $groups_key[$user['member_group_id']] : $user['member_group_id'];
 
             mysql_query("INSERT INTO " . $lb_prefix . "_members SET
         name = '" . mysql_escape_string($user['name']) . "',
@@ -200,6 +201,7 @@ function convert($params)
         lastdate = '" . $user['last_visit'] . "',
         b_day = '" . $user['bday_day'] . "',
         b_month = '" . $user['bday_month'] . "',
+        banned = '" . $user['member_banned'] . "',
         b_year = '" . $user['bday_year'] . "',
         count_warning = '" . $user['warn_level'] . "',
         posts_num = '" . $user['posts'] . "'"
@@ -207,7 +209,7 @@ function convert($params)
             $users_id[$user['member_id']] = mysql_insert_id();
             $users_group[mysql_insert_id()] = $group;
 
-            if ($user['temp_ban'] != "")
+            if ($user['temp_ban'] != "" && $user['temp_ban'] != "0")
                 $users_ban[mysql_insert_id()] = $user['temp_ban'];
         }
     }
@@ -575,18 +577,7 @@ function convert($params)
         file_tid = '$topic_id',
         file_pid = '$post_id'
         ", $sql_to) or die(mysql_error());
-            $id = mysql_insert_id();
-            print_r($id);
-
-            $sql_result = mysql_query("SELECT text FROM " . $lb_prefix . "_posts WHERE pid='$post_id'", $sql_to) or die(mysql_error());
-            $text = mysql_result($sql_result, 0, 0);
-            if ($posts_attachment[$post_id] == 0) {
-                $text .= "<br/>";
-                $posts_attachment[$post_id] = 1;
-            }
-            $text .= "<br/>[attachment=" . $id . "]";
-            mysql_query("UPDATE " . $lb_prefix . "_posts SET text='" . mysql_escape_string($text) . "' WHERE pid='$post_id'", $sql_to) or die(mysql_error());
-        }
+    }
     }
 
     while (true)
@@ -597,15 +588,46 @@ function convert($params)
         if (!$posts) break;
         foreach ($posts as $post)
         {
-            $post_id = $post['pid'];
-            $sql_result = mysql_query("SELECT * FROM " . $lb_prefix . "_topics_files WHERE file_pid='$post_id'", $sql_to) or die(mysql_error());
-            $files = fetch_array($sql_result);
-            $text = '';
-            foreach ($files as $file)
-                $text .= $file['file_id'] . ",";
-            if (strlen($text) > 0)
-                $text = substr($text, 0, -1);
-            mysql_query("UPDATE " . $lb_prefix . "_posts SET attachments='$text' WHERE pid='" . $post['pid'] . "'", $sql_to) or die(mysql_error());
+            preg_match_all('#\[attachment=(\d+):.+?\]#sui', $post['text'], $files);
+            $post_text = $post['text'];
+            foreach($files[1] as $file_id)
+            {
+                $post_text = preg_replace('#\[attachment='.$file_id.':.+?\]#','[attachment='.$file_id.']', $post_text);
+                $post_files[$post['pid']][] = $file_id;
+            }
+            mysql_query("UPDATE ".$lb_prefix."_posts SET text='$post_text' WHERE pid='".$post['pid']."'", $sql_to);
+        }
+    }
+
+
+    while(true)
+    {
+        $sql_result = get_limit_query("SELECT * FROM ".$lb_prefix."_topics_files", $sql_from);
+        $files = fetch_array($sql_result);
+        if(!$files)break;
+        foreach($files as $file)
+        {
+            $file_id = $file['file_id'];
+            $post_id = $file['file_pid'];
+
+            $sql_result = mysql_query("SELECT text, attachments FROM " . $lb_prefix . "_posts WHERE pid='$post_id'", $sql_to) or die(mysql_error());
+            $text = mysql_result($sql_result, 0, 0);
+            $old_text = $text;
+            $attachments_text = mysql_result($sql_result, 0, 1);
+            if ($posts_attachment[$post_id] == 0) {
+                $text .= "<br/>";
+                $posts_attachment[$post_id] = 1;
+            }
+            else
+                $attachments_text .= ',';
+            $attachments_text .= $file_id;
+            $text .= "<br/>[attachment=" . $file_id . "]";
+            if((isset($post_files[$post_id]) && in_array($file_id, $post_files[$post_id])))
+                $text = $old_text;
+
+            mysql_query("UPDATE " . $lb_prefix . "_posts SET text='" . mysql_escape_string($text) . "',attachments='".$attachments_text."'
+                WHERE pid='$post_id'", $sql_to) or die(mysql_error());
+
         }
     }
 

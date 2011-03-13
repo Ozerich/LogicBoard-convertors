@@ -27,23 +27,31 @@ $smiles = array(
 "unsure" => "039",
 "wacko" => "039",
 "blink" => "038",
-"ph34r" => "032"
-);
+"ph34r" => "032");
+
 
 function bb_text($text, $site)
 {
 	global $smiles;
+    $text = str_replace("\n","",$text);
     $text = htmlspecialchars_decode($text);
-	
-	foreach($smiles as $text_smile=>$code_smile)
+
+    foreach($smiles as $text_smile=>$code_smile)
     {
-        $text = preg_replace('#<img src="style_emoticons/<\#EMO_DIR\#>/'.$text_smile.'\.gif" style="vertical-align:middle" emoid=".+?" border="0" alt="'.$text_smile.'\.gif" />#sui',
-            '::'.$code_smile.'::', $text);;
+        preg_match("#<img src='[^\#]+?style_emoticons/<\#EMO_DIR\#>/".$text_smile."\.gif' class='bbc_emoticon' alt='.+?' />#sui", $text, $a);
+        $text = preg_replace("#<img src='[^\#]+?style_emoticons/<\#EMO_DIR\#>/".$text_smile."\.gif' class='bbc_emoticon' alt='.+?' />#sui",
+            '::'.$code_smile.'::', $text);
     }
+
+    $text = str_replace('[/list]<br />', '[/list]', $text);
+    $text = preg_replace('#\[list.*?\]<br />(.+?)\[/list\]#sui', '\\1', $text);
+
 
     $text = preg_replace('#<strike>(.+?)</strike>#sui', '[s]\\1[/s]', $text);
     $text = preg_replace("#<!--quoteo.*?--><div class='quotetop'>.+?</div><div class='quotemain'><!--quotec-->(.+?)<!--QuoteEnd--></div><!--QuoteEEnd-->#sui",
         "[quote]\\1[/quote]", $text);
+
+    $text = preg_replace('#\[quote.*?\]#sui', '[quote]', $text);
 
     $text = preg_replace("#<a href='index.php\?showtopic=(\d+)'>(.+?)</a>#sui", '[url='.$site.'?do=board&op=topic&id=\\1]\\2[/url]', $text);
     $text = preg_replace("#<a href='index.php\?act=findpost&pid=(\d+)'>(.+?)</a>#sui", '', $text);
@@ -55,6 +63,8 @@ function bb_text($text, $site)
     $text = $parser->unconvert($text);
 
     $text = preg_replace('#\[code\](.+?)\[/code\]#sui', '[php]\\1[/php]', $text);
+    $text = preg_replace('#\[sql\](.+?)\[/sql\]#sui', '[php]\\1[/php]', $text);
+    $text = preg_replace('#\[xml\](.+?)\[/xml\]#sui', '[php]\\1[/php]', $text);
 
     return $text;
 }

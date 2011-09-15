@@ -12,6 +12,7 @@ function InstallLB($host, $login, $password, $db_name, $table_prefix)
 
 	mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ficon` varchar(255) NOT NULL default '',
   `parent_id` smallint(5) NOT NULL DEFAULT '0',
   `posi` smallint(5) NOT NULL DEFAULT '1',
   `title` varchar(255)  NOT NULL DEFAULT '',
@@ -21,6 +22,7 @@ function InstallLB($host, $login, $password, $db_name, $table_prefix)
   `last_post_member_id` mediumint(8) NOT NULL DEFAULT '0',
   `last_post_date` int(10) DEFAULT '0',
   `allow_bbcode` tinyint(1) NOT NULL DEFAULT '1',
+  `allow_bbcode_list` varchar(100) NOT NULL default '',
   `allow_poll` tinyint(1) NOT NULL DEFAULT '1',
   `postcount` tinyint(1) NOT NULL DEFAULT '1',
   `password` varchar(40)  NOT NULL DEFAULT '',
@@ -143,11 +145,11 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `member_name_last` varchar(40) NOT NULL DEFAULT '',
   `post_num` int(10) NOT NULL DEFAULT '0',
   `post_hiden` smallint(5) NOT NULL DEFAULT '0',
+  `post_fixed` smallint(5) NOT NULL default '0',
   `fixed` tinyint(1) NOT NULL DEFAULT '0',
   `hiden` tinyint(1) NOT NULL DEFAULT '0',
   `member_id_open` mediumint(8) NOT NULL DEFAULT '0',
   `poll_id` int(10) NOT NULL DEFAULT '0',
-  `postfixed` tinyint(1) NOT NULL DEFAULT '0',
   `basket` tinyint(1) NOT NULL default '0',
   `basket_fid` smallint(5) NOT NULL default '0',
   PRIMARY KEY (`id`),
@@ -185,6 +187,7 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `moder_date` varchar(20) DEFAULT '0',
   `attachments` text DEFAULT '',
   `fixed` tinyint(1) NOT NULL DEFAULT '0',
+  `utility` smallint(5) NOT NULL default '0',
   PRIMARY KEY (`pid`),
   KEY `topic_id` (`topic_id`),
   KEY `new_topic` (`new_topic`),
@@ -290,6 +293,7 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   `title` varchar(255)  NOT NULL DEFAULT '',
   `post_num` int(10) NOT NULL DEFAULT '0',
   `stars` varchar(255)  NOT NULL DEFAULT '',
+  `mid` mediumint(8) NOT NULL default '0',
   PRIMARY KEY (`id`),
   KEY `title` (`title`),
   KEY `post_num` (`post_num`),
@@ -371,7 +375,6 @@ mysql_query("CREATE TABLE IF NOT EXISTS `$table_name` (
   KEY `moder_id` (`moder_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 ", $handle);
-
 
     mysql_close($handle);
 }

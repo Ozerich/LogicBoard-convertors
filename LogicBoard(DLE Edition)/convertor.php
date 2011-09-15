@@ -214,6 +214,7 @@ if(isset($_POST['convert_submit']))
         $options['admin_name'] = $_POST['admin_name'];
 
     $engine->Convert($options);
+    $engine->OnFinish();
 }
 
 else if(isset($_POST['engine_choose_submit'])){

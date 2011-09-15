@@ -95,4 +95,17 @@ abstract class EngineBase
     }
 
 
+    public function OnFinish()
+    {
+        $this->Start("Recount fixed posts");
+        $fixed = array();
+        $this->destSQL->Query("SELECT * FROM posts WHERE fixed=1");
+        $posts = $this->destSQL->ResultArray();
+        foreach($posts as $post)
+            $fixed[$post['topic_id']] = isset($fixed[$post['topic_id']]) ? $fixed[$post['topic_id']] + 1 : 1;
+        foreach($fixed as $topic_id => $val)
+            $this->destSQL->Query("UPDATE topics SET post_fixed=%% WHERE id=%%", $val, $topic_id);
+        $this->Finish();
+    }
+
 }

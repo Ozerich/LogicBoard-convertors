@@ -179,7 +179,7 @@ class DLE_2_6 extends EngineBase
                 $date_open = datetime_to_int($item['start_date']);
 
                 $this->destSQL->Query("INSERT INTO topics SET id=%%,forum_id=%%,title=%%,description=%%,date_open=%%,date_last=%%,
-                status=%%,views=%%,post_num=%%,post_hiden='0',fixed=%%,hiden=%%, poll_id='0',post_fixed='0'",
+                status=%%,views=%%,post_num=%%,post_hiden='0',fixed=%%,hiden=%%, poll_id='0'",
                                       $item['tid'], $forum_id, $item['title'], $item['topic_descr'], $date_open, $date_last, $status,
                                       $item['views'], $item['post'], $fixed, $hidden);
 

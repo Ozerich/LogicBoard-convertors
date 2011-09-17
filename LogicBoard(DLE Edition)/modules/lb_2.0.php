@@ -73,9 +73,9 @@ class LB_2_0 extends EngineBase
             if (!$users) break;
             foreach ($users as $user)
             {
-                $dle_user_names[] = $user['name'];
-                $dle_user_ids[$user['email']] = $user['user_id'];
-                $dle_user_emails[] = $user['email'];
+                $dle_user_names[] = strtolower($user['name']);
+                $dle_user_ids[strtolower($user['email'])] = $user['user_id'];
+                $dle_user_emails[] = strtolower($user['email']);
             }
         }
         $names[''] = '';
@@ -91,8 +91,8 @@ class LB_2_0 extends EngineBase
                 if ($user['member_group'] == 5 || $user['member_group'] == 6)
                     continue;
 
-                $user_email = $user['email'];
-                $user_name = $user['name'];
+                $user_email = strtolower($user['email']);
+                $user_name = strtolower($user['name']);
                 $user_group = $groups_id[$user['member_group']];
 
                 if (in_array($user_email, $dle_user_emails)) {
@@ -114,7 +114,7 @@ class LB_2_0 extends EngineBase
                      mstatus=%%,personal_title=%%,topics_num=%%,posts_num=%%,secret_key=%%,lb_twitter=%%,lb_vkontakte=%%,
                      lb_skype=%%,lb_sex=%%,lb_limit_publ=%%,lb_b_day=%%,lb_b_month=%%,lb_b_year=%%, lastdate=%%,
                       reg_date=%%",
-                                     $name, $user_email, $user['password'], $user_group,
+                                     $name, $user['email'], $user['password'], $user_group,
                                      $user['favorite'], $user['subscribe'], $user['mf_options'], $user['count_warnings'], $user['mstatus'],
                                      $user['personal_title'], $user['topics_num'], $user['posts_num'], $user['secret_key'], $user['twitter'],
                                      $user['vkontakte'], $user['skype'], $user['sex'], $user['limit_publ'], $user['b_day'],

@@ -180,7 +180,7 @@ require_once "modules/ipb_3_1_4.php";
 require_once "modules/lb_2.0.php";
 require_once "modules/twsf.php";
 
-$engines = array(new DLE_2_5(), new DLE_2_6(), new TWSF(), new IPB_3_1_4(), new LB_2_0(), new phpBB_3_0_9());
+$engines = array(new DLE_2_5(), new DLE_2_6(), new TWSF(), new IPB_3_1_4(), new LB_2_0(), new phpBB_3_0_9(), new VB_3_6);
 $engine = null;
 
 if(isset($_POST['engine'])) {
@@ -264,7 +264,7 @@ else if(isset($_POST['engine_choose_submit'])){
             <?php } ?>
         </div>
         <div id="to_container">
-            <label class="container-header">LogicBoard 2.0(DLE)</label>
+            <label class="container-header">LogicBoard 2.1(DLE)</label>
 
             <div class="option_item">
                 <label>MySQL Сервер</label>
@@ -322,7 +322,7 @@ else if(isset($_POST['engine_choose_submit'])){
 
 <form action="" method="POST">
     <div id="page">
-        <div id="header">Конвертор LogicBoard 2.0(DLE Edition)</div>
+        <div id="header">Конвертор LogicBoard 2.1(DLE Edition)</div>
         <div id="engine-choose">
             <label>Форум для конвертирования</label>
             <select name="engine">

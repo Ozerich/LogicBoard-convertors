@@ -41,7 +41,7 @@ class TWSF extends EngineBase
 
     public function convert()
     {
-        $users_id = $user_topics = $categories_id = $topics_id = $forums_id = $posts_id = $files_id = array();
+        $users_id = $user_topics = $files_id = array();
 
         $this->Start("Install");
         $this->InstallLB();
@@ -86,10 +86,9 @@ class TWSF extends EngineBase
         $categories = $this->srcSQL->ResultArray();
         foreach ($categories as $category)
         {
-            $this->destSQL->Query("INSERT INTO forums SET parent_id=0,posi=%,title=%,alt_name=%,
-            group_permission=0", $category['cat_order'], ($category['cat_title']),
+            $this->destSQL->Query("INSERT INTO forums SET id=%,parent_id=0,posi=%,title=%,alt_name=%,
+            group_permission=0", $category['cat_id'], $category['cat_order'], ($category['cat_title']),
                                   translit($category['cat_title']));
-            $categories_id[$category['cat_id']] = $this->destSQL->InsertedId();
         }
 
         $this->Finish();
@@ -128,6 +127,7 @@ class TWSF extends EngineBase
                 $permissions = serialize($permissions);
 
                 $this->destSQL->Query("INSERT INTO forums SET
+            id = '".$forum['forum_id']."',
             title = '" . ($forum['forum_name']) . "',
             alt_name = '" . (translit($forum['forum_name'])) . "',
             description = '" . ($forum['forum_desc']) . "',
@@ -142,7 +142,6 @@ class TWSF extends EngineBase
             postcount = '1',
             group_permission = '$permissions'
             ");
-                $forums_id[$forum['forum_id']] = $this->destSQL->InsertedId();
             }
         }
         $this->srcSQL->ResetLimit();
@@ -153,8 +152,8 @@ class TWSF extends EngineBase
             if (!$forums) break;
             foreach ($forums as $forum)
             {
-                $parent_id = $forum['p_forum_id'] == 0 ? $categories_id[$forum['cat_id']] : $forums_id[$forum['p_forum_id']];
-                $this->destSQL->Query("UPDATE forums SET parent_id=% WHERE id=%", $parent_id, $forums_id[$forum['forum_id']]);
+                $parent_id = $forum['p_forum_id'] == 0 ? $forum['cat_id'] : $forum['p_forum_id'];
+                $this->destSQL->Query("UPDATE forums SET parent_id=% WHERE id=%", $parent_id, $forum['forum_id']);
             }
         }
 
@@ -171,12 +170,11 @@ class TWSF extends EngineBase
                 $member_id_open = $users_id[$this->GetMemberId($topic['topic_poster'])];
                 $status = ($topic['topic_lock'] == 1) ? "closed" : "open";
 
-                $this->destSQL->Query("INSERT INTO topics SET forum_id = %,title = %,description=%,member_name_open=%,
+                $this->destSQL->Query("INSERT INTO topics SET id=%,forum_id = %,title = %,description=%,member_name_open=%,
                                     member_id_open = %,views = %,status =%,fixed = %,hiden = 0, post_num = %",
-                                    $forums_id[$topic['forum_id']],$topic['topic_title'],$topic['topic_subject'],
+                                    $topic['topic_id'],$topic['forum_id'],$topic['topic_title'],$topic['topic_subject'],
                                     $topic['topic_poster'],$member_id_open,$topic['topic_views'],$status,$fixed,$topic['topic_replies']);
                 $user_topics[$member_id_open] = isset($user_topics[$member_id_open]) ? $user_topics[$member_id_open] + 1 : 1;
-                $topics_id[$topic['topic_id']] = $this->destSQL->InsertedId();
             }
         }
         foreach ($user_topics as $user_id => $count)
@@ -196,10 +194,10 @@ class TWSF extends EngineBase
                 $this->srcSQL->Query("SELECT text FROM twsf_posts_text WHERE t_post_id=%");
                 $post_text = (dle_to_lb($this->srcSQL->Result()));
 
-                $this->destSQL->Query("INSERT INTO posts SET topic_id = %, post_date = %,post_member_name = %,post_member_id = %,
-                    text = %,ip = %, hide = 0,fixed = 0",$topics_id[$post['topic_id']],timetoint($post['post_time']),
+                $this->destSQL->Query("INSERT INTO posts SET pid=%,topic_id = %, post_date = %,post_member_name = %,post_member_id = %,
+                    text = %,ip = %, hide = 0,fixed = 0",$post['post_id'], $post['topic_id'],timetoint($post['post_time']),
                                       $post['poster'],$member_id,$post_text,$post['ip']);
-                $posts_id[$post['post_id']] = $this->destSQL->InsertedId();
+
             }
         }
 
@@ -278,7 +276,7 @@ class TWSF extends EngineBase
         $polls = $this->srcSQL->ResultArray();
         foreach ($polls as $poll)
         {
-            $topic_id = $topics_id[$poll['top_id']];
+            $topic_id = $poll['top_id'];
             $this->destSQL->Query("SELECT date_open FROM topics WHERE id=%", $topic_id);
             $open_date = $this->destSQL->Result();
             $variants = str_replace("<br />", "\r\n", $poll['body']);
@@ -297,7 +295,7 @@ class TWSF extends EngineBase
         $logs = $this->srcSQL->ResultArray();
         foreach ($logs as $log)
         {
-            $topic_id = $topics_id[$log['top_id']];
+            $topic_id = $log['top_id'];
             $this->destSQL->Query("SELECT poll_id FROM topics WHERE id=%", $topic_id);
             $poll_id = $this->destSQL->Result();
 
@@ -330,7 +328,7 @@ class TWSF extends EngineBase
         {
             $from_name = $log['member'];
             $from_id = get_member_id($from_name);
-            $post_id = $posts_id[$log['post_id']];
+            $post_id = $log['post_id'];
             $this->destSQL->Query("SELECT * FROM posts WHERE pid=%",$post_id);
             $result = $this->destSQL->ResultArray();
             $to_id = $result[0]['post_member_id'];
@@ -351,7 +349,7 @@ class TWSF extends EngineBase
             $this->destSQL->Query("INSERT INTO topics_subscribe SET subs_member = %,topic = %",$watch['user_id'],$watch['topic_id']);
             $this->destSQL->Query("SELECT subscribe FROM members WHERE member_id=%",$user_id);
             $s_text = $this->destSQL->Result();
-            $s_text = ($s_text == "") ? $topics_id[$watch['topic_id']] : $s_text . "," . $topics_id[$watch['topic_id']];
+            $s_text = ($s_text == "") ? $watch['topic_id'] : $s_text . "," . $watch['topic_id'];
             $this->destSQL->Query("UPDATE members SET subscribe=% WHERE member_id=%", $s_text, $user_id);
         }
 
@@ -433,7 +431,7 @@ class TWSF extends EngineBase
         {
             $author_name = $file['author'];
             $author_id = $this->GetMemberId($author_name);
-            $post_id = $posts_id[$file['post_id']];
+            $post_id = $file['post_id'];
 
             $this->destSQL->Query("SELECT topic_id FROM posts WHERE pid = '$post_id'");
             $topic_id = $this->destSQL->Result();

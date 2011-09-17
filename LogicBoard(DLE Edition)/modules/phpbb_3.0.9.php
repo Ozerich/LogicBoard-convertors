@@ -83,7 +83,7 @@ class phpBB_3_0_9 extends EngineBase
         $this->Finish();
 
 
-        $users_id = $forums_id = $topics_id = $posts_id = $posts_key = $posts_attachment = array();
+        $users_id = array();
 
         $group_masks = array("2" => 3, "3" => 3, "4" => 2, "5" => 1, "7" => 3);
 
@@ -185,24 +185,18 @@ class phpBB_3_0_9 extends EngineBase
         $this->srcSQL->Query("SELECT * FROM forums WHERE forum_type=1 AND parent_id=0");
         $forums = $this->srcSQL->ResultArray();
         if(!empty($forums))
-        {
-            $this->destSQL->Query("INSERT INTO forums SET parent_id=0, title=%%", iconv("UTF-8", "Windows-1251", 'Форум'));
-            $forums_id[0] = $this->destSQL->InsertedId();
-        }
+            $this->destSQL->Query("INSERT INTO forums SET id=1,parent_id=0, title=%%", iconv("UTF-8", "Windows-1251", 'Форум'));
 
 
         $this->srcSQL->Query("SELECT * FROM forums WHERE forum_type=0 ORDER by forum_id ASC");
         $posi = 2;
         $categories = $this->srcSQL->ResultArray();
         foreach ($categories as $category)
-        {
-            $this->destSQL->Query("INSERT INTO forums SET title=%%, posi=%%", $category['forum_name'], $posi++);
-            $forums_id[$category['forum_id']] = $this->destSQL->InsertedId();
-        }
+            $this->destSQL->Query("INSERT INTO forums SET id=%%,title=%%, posi=%%", $category['forum_id'],$category['forum_name'], $posi++);
+
         $this->Finish();
 
         $this->Start("Forums");
-
 
         $this->srcSQL->Query("SELECT * FROM forums WHERE forum_type=1 ORDER by forum_id ASC");
         $forums = $this->srcSQL->ResultArray();
@@ -223,19 +217,18 @@ class phpBB_3_0_9 extends EngineBase
         $posi = 1;
         foreach ($forums as $forum)
         {
-            $this->destSQL->Query("INSERT INTO forums SET title=%%, alt_name=%%, posts=%%, topics=%%, last_post_id=%%,
+            $this->destSQL->Query("INSERT INTO forums SET id=%%,title=%%, alt_name=%%, posts=%%, topics=%%, last_post_id=%%,
             last_post_member_id=%%,	last_post_member=%%, last_post_date=%%,group_permission=%%, posi=%%",
-                                  $forum['forum_name'], translit($forum['forum_name'], false), $forum['forum_posts'], $forum['forum_topics'],
+                                  $forum['forum_id'], $forum['forum_name'], translit($forum['forum_name'], false), $forum['forum_posts'], $forum['forum_topics'],
                                   $forum['forum_last_post_id'], $users_id[$forum['forum_last_poster_id']],
                                   $this->GetMemberName($users_id[$forum['forum_last_poster_id']]),
                                   $forum['forum_last_post_time'], $perm, $posi++);
-            $forums_id[$forum['forum_id']] = $this->destSQL->InsertedId();
         }
         foreach ($forums as $forum)
         {
-            $parent = $forum['parent_id'] == 0 ? $forums_id[0] : $forums_id[$forum['parent_id']];
+            $parent = $forum['parent_id'] == 0 ? 1 : $forum['parent_id'];
             $this->destSQL->Query("UPDATE forums SET parent_id=%% WHERE id=%%",
-                                  $parent, $forums_id[$forum['forum_id']]);
+                                  $parent, $forum['forum_id']);
         }
 
         $this->Finish();
@@ -248,16 +241,15 @@ class phpBB_3_0_9 extends EngineBase
         $topics = $this->srcSQL->ResultArray();
         foreach ($topics as $topic)
         {
-            $this->destSQL->Query("INSERT INTO topics SET forum_id=%%, title=%%, post_id=%%, date_open=%%, date_last=%%,
+            $this->destSQL->Query("INSERT INTO topics SET id=%%, forum_id=%%, title=%%, post_id=%%, date_open=%%, date_last=%%,
             post_num=%%, views=%%, last_post_id=%%, last_post_member=%%,member_name_last=%%, member_id_open=%%, member_name_open=%%",
-                                  $forums_id[$topic['forum_id']], $topic['topic_title'], $topic['topic_first_post_id'],
+                                  $topic['topic_id'], $topic['forum_id'], $topic['topic_title'], $topic['topic_first_post_id'],
                                   $topic['topic_time'], $topic['topic_last_post_time'], $topic['topic_replies'],
                                   $topic['topic_views'], $topic['topic_last_post_id'], $users_id[$topic['topic_last_poster_id']],
                                   $this->GetMemberName($users_id[$topic['topic_last_poster_id']]), $users_id[$topic['topic_poster']],
                                   $this->GetMemberName($users_id[$topic['topic_poster']]));
             if($topic['poll_title'] != "")
                 $topics_poll[$topic['topic_id']] = array("title"=>$topic['poll_title'], "time" => $topic['poll_start']);
-            $topics_id[$topic['topic_id']] = $this->destSQL->InsertedId();
         }
 
         $this->Finish();
@@ -267,15 +259,14 @@ class phpBB_3_0_9 extends EngineBase
         $posts = $this->srcSQL->ResultArray();
         foreach ($posts as $post)
         {
-            $topic_id = $topics_id[$post['topic_id']];
+            $topic_id = $post['topic_id'];
             $post_time = $post['post_time'];
-            $this->destSQL->Query("INSERT INTO posts SET topic_id=%%, text=%%, post_date=%%, edit_date=%%,post_member_id=%%,
+            $this->destSQL->Query("INSERT INTO posts SET pid=%%, topic_id=%%, text=%%, post_date=%%, edit_date=%%,post_member_id=%%,
                                 post_member_name=%%, ip=%%, edit_member_id=%%, edit_member_name=%%, edit_reason=%%",
-                                  $topic_id, to_bb($post['post_text']), $post_time, $post['post_edit_time'],
+                                  $post['post_id'],$topic_id, to_bb($post['post_text']), $post_time, $post['post_edit_time'],
                                   $users_id[$post['poster_id']], $this->GetMemberName($users_id[$post['poster_id']]),
                                   $post['poster_ip'], $users_id[$post['post_edit_user']],
                                   $this->GetMemberName($users_id[$post['post_edit_user']]), $post['post_edit_reason']);
-            $posts_id[$post['post_id']] = $this->destSQL->InsertedId();
             if(!isset($topic_first_posts[$topic_id]) || $post_time < $topic_first_posts[$topic_id]['time'])
                 $topic_first_posts[$topic_id] = array("post"=>$this->destSQL->InsertedId(), "time" => $post_time);
         }
@@ -286,18 +277,18 @@ class phpBB_3_0_9 extends EngineBase
         $topics = $this->destSQL->ResultArray();
         foreach($topics as $topic)
         {
-            $post_id = $posts_id[$topic['post_id']];
+            $post_id = $topic['post_id'];
             $topic_id = $topic['id'];
             $this->destSQL->Query("UPDATE posts SET new_topic=1 WHERE pid=%%", $post_id);
             $this->destSQL->Query("UPDATE topics SET post_id=%%, last_post_id=%% WHERE id=%%",
-                                  $post_id, $posts_id[$topic['last_post_id']], $topic_id);
+                                  $post_id, $topic['last_post_id'], $topic_id);
         }
 
         $this->destSQL->Query("SELECT * FROM forums");
         $forums = $this->destSQL->ResultArray();
         foreach($forums as $forum)
         {
-            $last_post_id = $posts_id[$forum['last_post_id']];
+            $last_post_id = $forum['last_post_id'];
             $this->destSQL->Query("SELECT topic_id FROM posts WHERE pid=%%", $last_post_id);
             $last_topic_id = $this->destSQL->Result();
             $this->destSQL->Query("SELECT title FROM topics WHERE id=%%", $last_topic_id);
@@ -330,8 +321,8 @@ class phpBB_3_0_9 extends EngineBase
                 }
             }
             $this->destSQL->Query("INSERT INTO topics_poll SET tid=%%,vote_num=%%,question=%%,variants=%%, open_date=%%,
-            answers=%%", $topics_id[$tid], $count, $poll['title'], $variants, $poll['time'], $answers);
-            $this->destSQL->Query("UPDATE topics SET poll_id=%% WHERE id=%%", $this->destSQL->InsertedId(), $topics_id[$tid]);
+            answers=%%", $tid, $count, $poll['title'], $variants, $poll['time'], $answers);
+            $this->destSQL->Query("UPDATE topics SET poll_id=%% WHERE id=%%", $this->destSQL->InsertedId(), $tid);
         }
 
         $this->Finish();
@@ -342,7 +333,7 @@ class phpBB_3_0_9 extends EngineBase
         $logs = $this->srcSQL->ResultArray();
         foreach($logs as $log)
         {
-            $this->destSQL->Query("SELECT poll_id FROM topics WHERE id=%%", $topics_id[$log['topic_id']]);
+            $this->destSQL->Query("SELECT poll_id FROM topics WHERE id=%%", $log['topic_id']);
             $poll_id = $this->destSQL->Result();
 
             $this->destSQL->Query("SELECT variants FROM topics_poll WHERE id=%%", $poll_id);
@@ -373,16 +364,16 @@ class phpBB_3_0_9 extends EngineBase
         $files = $this->srcSQL->ResultArray();
         foreach($files as $file)
         {
-            $this->destSQL->Query("SELECT forum_id FROM topics WHERE id=%%", $topics_id[$file['topic_id']]);
+            $this->destSQL->Query("SELECT forum_id FROM topics WHERE id=%%", $file['topic_id']);
             $fid = $this->destSQL->Result();
             $type = strpos($file['mimetype'], "image") !== false ? "picture" : "file";
             $this->destSQL->Query("INSERT INTO topics_files SET file_title=%%,file_name=%%,file_type=%%,file_mid=%%,file_mname=%%,
                 file_date=%%, file_size=%%, file_count=%%,file_fid=%%, file_tid=%%, file_pid=%%, file_convert=1",
                                   $file['real_filename'], $file['physical_filename'],$type, $users_id[$file['poster_id']],
                                   $this->GetMemberName($users_id[$file['poster_id']]),$file['filetime'], $file['filesize'],
-                                  $file['download_count'], $fid, $topics_id[$file['topic_id']], $posts_id[$file['post_msg_id']]);
+                                  $file['download_count'], $fid, $file['topic_id'], $file['post_msg_id']);
             $file_id = $this->destSQL->InsertedId();
-            $post_id = $posts_id[$file['post_msg_id']];
+            $post_id = $file['post_msg_id'];
             $this->destSQL->Query("SELECT attachments FROM posts WHERE pid=%%", $post_id);
             $text = $this->destSQL->Result();
             if($text)

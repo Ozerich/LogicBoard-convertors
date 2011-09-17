@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
     <meta http-equiv="content-type" content="text/html; charset=windows-1251"/>
-    <title>Конвертор LogicBoard 2.0(DLE Edition)</title>
+    <title>Конвертор LogicBoard 2.1(DLE Edition)</title>
     <link rel="stylesheet" href="style.css"/>
     <style>
         * {
@@ -224,7 +224,7 @@ else if(isset($_POST['engine_choose_submit'])){
 
 <form action="" method="POST">
     <div id="page">
-        <div id="header">Конвертор LogicBoard 2.0(DLE Edition)</div>
+        <div id="header">Конвертор LogicBoard 2.1(DLE Edition)</div>
         <?php if($engine->Setup("add_text")){ echo '<div id="warning"><ul>';
             foreach($engine->Setup("add_text") as $text)
                  echo "<li>".$text.'</li>';

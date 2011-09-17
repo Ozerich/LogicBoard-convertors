@@ -1,9 +1,12 @@
+<?
+$title = "Конвертор LogicBoard 2.1";
+?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-    <title>Конвертор LogicBoard 2.0</title>
+    <title><?=$title?></title>
     <link rel="stylesheet" href="style.css"/>
     <style>
         * {
@@ -187,7 +190,7 @@ else if(isset($_POST['engine_choose_submit'])){
 
 <form action="" method="POST">
     <div id="page">
-        <div id="header">Конвертор LogicBoard 2.0</div>
+        <div id="header"><?=$title?></div>
         <?php if($engine->Setup("add_text") != "") echo '<div id="warning">'.$engine->Setup("add_text").'</div>'; ?>
         <div id="from_container">
 
@@ -254,7 +257,7 @@ else if(isset($_POST['engine_choose_submit'])){
 
 <form action="" method="POST">
     <div id="page">
-        <div id="header">Конвертор LogicBoard 2.0</div>
+        <div id="header"><?=$title?></div>
         <div id="engine-choose">
             <label>Форум для конвертирования</label>
             <select name="engine">

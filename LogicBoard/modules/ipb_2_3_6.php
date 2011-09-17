@@ -33,7 +33,7 @@ class IPB_2_3_6 extends EngineBase
 
 
         $groups_key = array("4" => "1", "6" => "2", "3" => "4", "2" => "5", "1" => "6");
-        $groups_masks = $users_id = $forums_id = $topics_id = $posts_id = $posts_key = $posts_attachment = $users_ban = $users_group = array();
+        $groups_masks = $users_id = $posts_key = $posts_attachment = $users_ban = $users_group = array();
         
         $this->Start("Groups");
         
@@ -118,10 +118,9 @@ class IPB_2_3_6 extends EngineBase
         $categories = $this->srcSQL->ResultArray();
         foreach ($categories as $category)
         {
-            $this->destSQL->Query("INSERT INTO forums SET parent_id=0,title=%,alt_name=%,postcount=%,posi=%",
-                                  $category['name'],translit($category['name']),$category['inc_postcount'],
+            $this->destSQL->Query("INSERT INTO forums SET id=%,parent_id=0,title=%,alt_name=%,postcount=%,posi=%",
+                                  $category['id'], $category['name'],translit($category['name']),$category['inc_postcount'],
                                   $category['position']);
-            $forums_id[$category['id']] = $this->destSQL->InsertedId();
         }       
         $this->srcSQL->Query("SELECT * FROM forum_perms");
         $group_masks_ = $this->srcSQL->ResultArray();
@@ -202,15 +201,15 @@ class IPB_2_3_6 extends EngineBase
             foreach ($permissions[3] as $key => $value)
                 $permissions[3][$key] = 1;
             $sort_order = $forum['sort_order'] == 'Z-A' ? 'DESC' : 'ASC';
-            $this->destSQL->Query("INSERT INTO forums SET posi=%,parent_id=%,title=%,alt_name=%,description=%,
+            $this->destSQL->Query("INSERT INTO forums SET id=%,posi=%,parent_id=%,title=%,alt_name=%,description=%,
                     allow_bbcode=1,allow_poll=%,postcount=%,topics_hiden=%,posts_hiden=%,group_permission=%,
                     last_post_member=%,last_post_member_id=%,last_title=%,sort_order=%,posts=%,rules=%",
-                                  $forum['position'],$forums_id[$forum['parent_id']],$forum['name'],translit($forum['name']),
+                                  $forum['id'], $forum['position'],$forum['parent_id'],$forum['name'],translit($forum['name']),
                                   $forum['description'],$forum['allow_poll'],$forum['inc_postcount'],$forum['queued_topics'],
                                   $forum['queued_posts'],serialize($permissions),$forum['last_poster_name'],
                                   $users_id[$forum['last_poster_id']],$forum['last_title'],$sort_order,$forum['posts'],
                                   $forum['rules_text']);
-            $forums_id[$forum['id']] = $this->destSQL->InsertedId();
+
         }
 
         $this->Finish();
@@ -224,15 +223,14 @@ class IPB_2_3_6 extends EngineBase
 
             foreach ($topics as $topic)
             {
-                $this->destSQL->Query("INSERT INTO topics SET forum_id=%,title=%,description=%,date_open=%,date_last=%,
+                $this->destSQL->Query("INSERT INTO topics SET id=%,forum_id=%,title=%,description=%,date_open=%,date_last=%,
                                        status=%,post_num=%,post_hiden=%,hiden=%,fixed=%,views=%,last_post_member=%,
                                        member_name_open=%,member_id_open=%,member_name_last=%",
-                                      $forums_id[$topic['forum_id']],$topic['title'],$topic['description'],
+                                      $topic['tid'],$topic['forum_id'],$topic['title'],$topic['description'],
                                       $topic['start_date'],$topic['last_post'],$topic['state'],$topic['posts'],
                                       $topic['topic_queuedposts'],$topic['approved'],$topic['pinned'],$topic['views'],
                                       $topic['last_poster_id'],$topic['starter_name'],$topic['starter_id'],
                                       $topic['last_poster_name']);
-                $topics_id[$topic['tid']] = $this->destSQL->InsertedId();
             }
         }
 
@@ -250,14 +248,13 @@ class IPB_2_3_6 extends EngineBase
                 $text = ipb_to_lb($post['post']);
                 $post_member_name = $this->GetMemberName($user_id);
                 $edit_member_id = $this->GetMemberId($post['edit_name']);
-                $this->destSQL->Query("INSERT INTO posts SET topic_id=%,new_topic=%,text=%,post_date=%,edit_date=%,
+                $this->destSQL->Query("INSERT INTO posts SET pid=%,topic_id=%,new_topic=%,text=%,post_date=%,edit_date=%,
                                     post_member_id=%,post_member_name=%,ip=%,hide=%,edit_member_name=%,edit_member_id=%,
-                                    edit_reason=%",$topics_id[$post['topic_id']],$post['new_topic'],$text,
+                                    edit_reason=%",$post['topic_id'],$post['pid'], $post['new_topic'],$text,
                                       $post['post_date'],$post['edit_time'],$user_id,$post_member_name,
                                       $post['ip_address'],$post['queued'],$post['edit_name'],$edit_member_id,
                                       $post['post_edit_reason']);
-                $posts_id[$post['pid']] = $posts_key[$post['post_key']] = $this->destSQL->InsertedId();
-                $posts_attachment[$this->destSQL->InsertedId()] = 0;
+                 $posts_attachment[$this->destSQL->InsertedId()] = 0;
             }
         }
 
@@ -271,8 +268,8 @@ class IPB_2_3_6 extends EngineBase
             if (!$topics) break;
             foreach ($topics as $topic)
             {
-                $first_post = $posts_id[$topic['topic_firstpost']];
-                $topic_id = $topics_id[$topic['tid']];
+                $first_post = $topic['topic_firstpost'];
+                $topic_id = $topic['tid'];
                 $this->destSQL->Query("UPDATE topics SET post_id=% WHERE id=%", $first_post, $topic_id);
                 $this->destSQL->Query("SELECT * FROM posts WHERE topic_id=%", $topic_id);
                 $posts = $this->destSQL->ResultArray();
@@ -290,8 +287,8 @@ class IPB_2_3_6 extends EngineBase
         $forums = $this->srcSQL->ResultArray();
         foreach ($forums as $forum)
         {
-            $last_topic_id = $topics_id[$forum['last_id']];
-            $forum_id = $forums_id[$forum['id']];
+            $last_topic_id = $forum['last_id'];
+            $forum_id =$forum['id'];
             $this->destSQL->Query("UPDATE forums SET last_topic_id=% WHERE id=%",$last_topic_id,$forum_id);
         }
         $this->destSQL->Query("SELECT * FROM forums WHERE parent_id!=0");
@@ -328,7 +325,7 @@ class IPB_2_3_6 extends EngineBase
 
         foreach ($polls as $poll)
         {
-            $topic_id = $topics_id[$poll['tid']];
+            $topic_id = $poll['tid'];
             $choises_text = stripslashes($poll['choices']);
             $choises = unserialize($choises_text);
             $choises = $choises[1];
@@ -364,7 +361,7 @@ class IPB_2_3_6 extends EngineBase
             if (!$logs) break;
             foreach ($logs as $log)
             {
-                $this->destSQL->Query("SELECT poll_id FROM topics WHERE id='" . $topics_id[$log['tid']] . "'");
+                $this->destSQL->Query("SELECT poll_id FROM topics WHERE id='" . $log['tid'] . "'");
                 $poll_id = $this->destSQL->Result();
                 $member_name = $this->GetMemberName($users_id[$log['member_id']]);
                 $this->destSQL->Query("INSERT INTO topics_poll_logs SET poll_id=%,ip=%,log_date=%,member_id=%,
@@ -528,7 +525,7 @@ class IPB_2_3_6 extends EngineBase
 
 
             $this->destSQL->Query("INSERT INTO forums_moderator SET fm_forum_id=%,fm_member_id=%,fm_member_name=%,
-                                   fm_group_id=%,fm_is_group=%,fm_permission=%",$forums_id[$moder['forum_id']],
+                                   fm_group_id=%,fm_is_group=%,fm_permission=%",$moder['forum_id'],
                                    $member_id, $member_name, $group_id, $is_group,serialize($permissions));
         }
 
@@ -542,7 +539,7 @@ class IPB_2_3_6 extends EngineBase
             if (!$subscribes) break;
             foreach ($subscribes as $subscribe)
                 $this->destSQL->Query("INSERT INTO topics_subscribe SET subs_member=%,topic=%,date=%",
-                                      $users_id[$subscribe['member_id']],$topics_id[$subscribe['topic_id']],
+                                      $users_id[$subscribe['member_id']],$subscribe['topic_id'],
                                       $subscribe['start_date']);
         }
         $this->Finish();

@@ -29,7 +29,7 @@ class DLE_2_6 extends EngineBase
 
     public function Convert($options)
     {
-        $forums_id = $topics_id = $posts_id = $user_topics = $user_posts = $user_rep = array();
+       $user_topics = $user_posts = $user_rep = array();
         $this->Start("Install");
         $this->InstallLB($options);
         $this->Finish();
@@ -60,9 +60,8 @@ class DLE_2_6 extends EngineBase
         {
             $alt_name = ($item['alt_name'] == "") ? translit($item['alt_name']) : $item['alt_name'];
             $postcount = (isset($item['postcount'])) ? $item['postcount'] : 1;
-            $this->destSQL->Query("INSERT INTO forums SET parent_id='0', title=%%, alt_name=%%, postcount=%%, posi=%%",
-                                  $item['name'], $alt_name, $postcount, $item['position']);
-            $forums_id[$item['id']] = $this->destSQL->InsertedId();
+            $this->destSQL->Query("INSERT INTO forums SET id=%%,parent_id='0', title=%%, alt_name=%%, postcount=%%, posi=%%",
+                                  $item['id'],$item['name'], $alt_name, $postcount, $item['position']);
         }
 
         $this->Finish();
@@ -136,14 +135,12 @@ class DLE_2_6 extends EngineBase
                 $last_post_date = datetime_to_int($item['f_last_date']);
 
                 $this->destSQL->Query("INSERT INTO forums SET
-            posi=%%,title=%%,alt_name=%%,description=%%,last_post_member=%%, last_post_member_id=%%,
+            id=%%,posi=%%,title=%%,alt_name=%%,description=%%,last_post_member=%%, last_post_member_id=%%,
             last_post_date=%%,allow_bbcode=1, allow_poll=1,postcount=%%, group_permission=%%,password=%%,
             sort_order='DESC',posts=%%,topics=%%,rules=%%,meta_desc='',meta_key=''",
-                                      $item['position'], $item['name'], translit($item['name']), $item['description'],
+                                      $item['id'],$item['position'], $item['name'], translit($item['name']), $item['description'],
                                       $item['f_last_poster_name'], $last_user, $last_post_date, $postcount, $permissions,
                                       $item['password'], $item['posts'], $item['topics'], $item['rules']);
-
-                $forums_id[$item['id']] = $this->destSQL->InsertedId();
             }
         }
 
@@ -156,8 +153,8 @@ class DLE_2_6 extends EngineBase
             if (!$result) break;
             foreach ($result as $item)
             {
-                $parent_id = $forums_id[$item['parentid']];
-                $forum_id = $forums_id[$item['id']];
+                $parent_id = $item['parentid'];
+                $forum_id = $item['id'];
                 $this->destSQL->Query("UPDATE forums SET parent_id=%% WHERE id=%%", $parent_id, $forum_id);
             }
         }
@@ -173,7 +170,7 @@ class DLE_2_6 extends EngineBase
             $max_data = array();
             foreach ($result as $item)
             {
-                $forum_id = $forums_id[$item['forum_id']];
+                $forum_id = $item['forum_id'];
                 $max_data[$forum_id] = array("time" => "", "tid" => "", "hiden" => "");
                 $date_last = datetime_to_int($item['last_date']);
                 $hidden = ($item['hidden'] >= 1) ? 1 : 0;
@@ -181,17 +178,16 @@ class DLE_2_6 extends EngineBase
                 $fixed = $item['fixed'] == 0 ? 1 : 0;
                 $date_open = datetime_to_int($item['start_date']);
 
-                $this->destSQL->Query("INSERT INTO topics SET forum_id=%%,title=%%,description=%%,date_open=%%,date_last=%%,
+                $this->destSQL->Query("INSERT INTO topics SET id=%%,forum_id=%%,title=%%,description=%%,date_open=%%,date_last=%%,
                 status=%%,views=%%,post_num=%%,post_hiden='0',fixed=%%,hiden=%%, poll_id='0',post_fixed='0'",
-                                      $forum_id, $item['title'], $item['topic_descr'], $date_open, $date_last, $status,
+                                      $item['tid'], $forum_id, $item['title'], $item['topic_descr'], $date_open, $date_last, $status,
                                       $item['views'], $item['post'], $fixed, $hidden);
 
-                $topics_id[$item['tid']] = $this->destSQL->InsertedId();
 
                 $user_topics[$this->GetMemberId($item['author_topic'])]++;
 
                 if ($item['poll_title'] != "") {
-                    $topic_id = $topics_id[$item['tid']];
+                    $topic_id = $item['tid'];
                     $variants = str_replace("<br />", "\r\n", $item['poll_body']);
                     $open_date = datetime_to_int($item['start_date']);
                     $this->destSQL->Query("INSERT INTO topics_poll SET
@@ -203,7 +199,7 @@ class DLE_2_6 extends EngineBase
                 }
                 if ((!isset($max_data[$forum_id])) || ($max_data[$forum_id]["time"] < $date_last)) {
                     $max_data[$forum_id]["time"] = $date_last;
-                    $max_data[$forum_id]["tid"] = $topics_id[$item['tid']];
+                    $max_data[$forum_id]["tid"] =$item['tid'];
                 }
                 $max_data[$forum_id]['hiden'] += $hidden;
             }
@@ -231,7 +227,7 @@ class DLE_2_6 extends EngineBase
             if (!$result) break;
             foreach ($result as $item)
             {
-                $topic_id = $topics_id[$item['topic_id']];
+                $topic_id = $item['topic_id'];
                 $post_date = datetime_to_int($item['post_date']);
                 $post_member_id = $this->GetMemberId($item['post_author']);
                 $edit_member_id = $this->GetMemberId($item['edit_user']);
@@ -242,20 +238,19 @@ class DLE_2_6 extends EngineBase
                 $text = dle_to_lb($item['post_text']);
 
                 $this->destSQL->Query("INSERT INTO posts SET
-            topic_id=%%,new_topic='0',text=%%,post_date=%%,edit_date=%%,post_member_id=%%,post_member_name=%%,
-            ip=%%,hide=%%,edit_member_id=%%,edit_member_name=%%,edit_reason='',fixed='0'",
+            pid=%%,topic_id=%%,new_topic='0',text=%%,post_date=%%,edit_date=%%,post_member_id=%%,post_member_name=%%,
+            ip=%%,hide=%%,edit_member_id=%%,edit_member_name=%%,edit_reason='',fixed='0'",$item['pid'],
                                       $topic_id, $text, $post_date, $item['edit_time'], $post_member_id, $item['post_author'],
                                       $item['post_ip'], $hiden, $edit_member_id, $edit_member_name);
 
-                $posts_id[$item['pid']] = $this->destSQL->InsertedId();
                 $user_posts[$this->GetMemberId($item['post_author'])]++;
 
                 if ((!isset($min_data[$topic_id])) || ($min_data[$topic_id]["time"] > $post_date)) {
                     $min_data[$topic_id]["time"] = $post_date;
-                    $min_data[$topic_id]["pid"] = $posts_id[$item['pid']];
+                    $min_data[$topic_id]["pid"] = $item['pid'];
                 }
                 if ((!isset($max_data[$topic_id])) || ($max_data[$topic_id]["time"] < $post_date))
-                    $max_data[$topic_id] = array("time" => $post_date, "pid" => $posts_id[$item['pid']]);
+                    $max_data[$topic_id] = array("time" => $post_date, "pid" => $item['pid']);
                 $min_data[$topic_id]['hiden'] += $hiden;
             }
         }
@@ -297,7 +292,6 @@ class DLE_2_6 extends EngineBase
             $last_post_member_id = $this->destSQL->Result();
             $member_name_last = $this->GetMemberName($last_post_member_id);
             $last_post_member_id = $last_post_member_id ? $last_post_member_id : "0";
-            //!!!!!!!!!!!!!!!!!//
 
             $this->destSQL->Query("UPDATE topics SET last_post_id=%%,last_post_member=%%,member_name_last=%%
 		        WHERE id=%%", $last_post_id, $last_post_member_id, $member_name_last, $tid);
@@ -402,7 +396,7 @@ class DLE_2_6 extends EngineBase
             $this->srcSQL->Query("SELECT logged_ip FROM users WHERE user_id=%%", $user_id);
             $user_ip = $this->srcSQL->Result();
 
-            $topic_id = $topics_id[$item['topic_id']];
+            $topic_id = $item['topic_id'];
             $this->destSQL->Query("SELECT poll_id FROM topics WHERE id=%%", $topic_id);
 
             $poll_id = $this->destSQL->Result();
@@ -451,7 +445,7 @@ class DLE_2_6 extends EngineBase
             $group = $group < 6 ? $group : $item['group_id'] + 1;
             $this->destSQL->Query("INSERT INTO forums_moderator SET
 		            fm_forum_id=%%,fm_member_id=%%,fm_member_name=%%,fm_group_id=%%,fm_is_group='0',fm_permission=%%",
-                                  $forums_id[$item['forum_id']], $member_id, $member_name, $group, $permissions);
+                                  $item['forum_id'], $member_id, $member_name, $group, $permissions);
         }
 
         $this->Finish();
@@ -473,7 +467,7 @@ class DLE_2_6 extends EngineBase
         {
             $user_id = $item['user_id'];
             if ($item['topic_id'] == -1) continue;
-            $topic_id = $topics_id[$item['topic_id']];
+            $topic_id = $item['topic_id'];
             $this->destSQL->Query("INSERT INTO topics_subscribe SET subs_member=%%,topic=%%", $user_id, $topic_id);
 
             $this->srcSQL->Query("SELECT lb_subscribe FROM users WHERE user_id=%%", $user_id);
@@ -495,7 +489,7 @@ class DLE_2_6 extends EngineBase
 
             $author_name = $file['file_author'];
             $author_id = $this->GetMemberId($author_name);
-            $topic_id = $topics_id[$file['topic_id']];
+            $topic_id = $file['topic_id'];
             $this->destSQL->Query("SELECT forum_id FROM topics WHERE id=%%", $topic_id);
             $forum_id = $this->destSQL->Result();
 
@@ -506,7 +500,7 @@ class DLE_2_6 extends EngineBase
                     file_title=%%,file_name=%%,file_type=%%,file_mname=%%,file_mid=%%,file_date=%%,file_size=%%,file_count=%%,
                     file_tid=%%,file_fid=%%,file_convert='1',file_pid=%%",
                                   $file['file_name'], $file['onserver'], $file_type, $author_name, $author_id, $file['file_date'],
-                                  $file['file_size'], $file['dcount'], $topic_id, $forum_id, $posts_id[$file['post_id']]);
+                                  $file['file_size'], $file['dcount'], $topic_id, $forum_id, $file['post_id']);
             ;
 
             $files_id[$file['file_id']] = $this->destSQL->InsertedId();

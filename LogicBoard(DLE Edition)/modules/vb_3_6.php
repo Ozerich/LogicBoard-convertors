@@ -20,7 +20,7 @@ class VB_3_6 extends EngineBase
     {
         $added_email = $added_users = array();
 
-        /*$this->Start("Install");
+        $this->Start("Install");
         $this->InstallLB($options);
         $this->Finish();*/
 
@@ -69,8 +69,8 @@ class VB_3_6 extends EngineBase
             $b_day = $b_month = $b_year = "";
             if (!empty($birthday)) {
                 $birthday = explode("-", $birthday);
-                $b_day = $birthday[0];
-                $b_month = $birthday[1];
+                $b_day = $birthday[1];
+                $b_month = $birthday[0];
                 $b_year = $birthday[2];
             }
             if (array_key_exists(strtolower($user['email']), $this->dle_emails) && !in_array(strtolower($user['email']), $added_email)) {
@@ -84,7 +84,7 @@ class VB_3_6 extends EngineBase
                 $iter = 0;
                 while (array_key_exists(strtolower($user['username']), $this->dle_users) || in_array(strtolower($user['username']), $added_users) && $iter++ < 5)
                     $user['username'] .= "_";
-                if ($iter >= r)
+                if ($iter >= 4)
                     continue;
                 $this->dleSQL->Query("INSERT INTO users SET email=%%,password=%%,name=%%,user_group=%%,lastdate=%%,reg_date=%%,
                             icq=%%,logged_ip=%%,count_warning=%%,topics_num=%%,posts_num=%%,lb_skype=%%,lb_b_day=%%,lb_b_month=%%,
@@ -101,7 +101,7 @@ class VB_3_6 extends EngineBase
 
         $this->Finish();
 
-/*
+
         $this->Start("Categories & Forums");
 
         $this->dleSQL->Query("SELECT id FROM usergroups");
@@ -130,7 +130,7 @@ class VB_3_6 extends EngineBase
         $this->Finish();
 
         $this->Start("Posts");
-        $this->srcSQL->Query("SELECT postid,threadid,userid,username,dateline,pagetext,visible,attach,ipaddress FROM post LIMIT 149990, 100000");
+        $this->srcSQL->Query("SELECT postid,threadid,userid,username,dateline,pagetext,visible,attach,ipaddress FROM post");
         $posts = $this->srcSQL->ResultArray();
         foreach ($posts as $post)
             $this->destSQL->Query("INSERT INTO posts SET pid=%%, topic_id=%%,text=%%,post_date=%%,ip=%%,hide=%%,fixed=%%,
@@ -138,9 +138,7 @@ class VB_3_6 extends EngineBase
                                   $post['ipaddess'], ($post['visible'] + 1) % 2, $post['attach'],
                                   $post['userid'] == 0 ? $this->GetMemberId($post['username'])
                                           : $post['userid'], $post['username']);
-
         $this->Finish();
-*/
 
         $this->Start("Ranks");
         $this->srcSQL->Query("SELECT minposts, title FROM usertitle");

@@ -13,17 +13,6 @@ class TWSF extends EngineBase
 
     );
 
-    private function GetMemberId($name)
-    {
-        $this->srcSQL->Query("SELECT user_id FROM users WHERE name = %%", $name);
-        return $this->srcSQL->Result(-1);
-    }
-
-    private function GetMemberName($id)
-    {
-        $this->srcSQL->Query("SELECT name FROM users WHERE user_id = %%", $id);
-        return $this->srcSQL->Result("Удалён");
-    }
 
     private function get_forum_permissions($forum_id, $group_id, $type)
     {
@@ -42,7 +31,7 @@ class TWSF extends EngineBase
         }
     }
 
-    public function convert($options)
+    public function Convert($options)
     {
         $users_id = $user_topics = $files_id = array();
 
@@ -73,12 +62,20 @@ class TWSF extends EngineBase
 
         $this->Start("Categories");
 
+        $max_forum_id = 0;
+        $this->srcSQL->Query("SELECT forum_id FROM twsf_forums");
+        $ids = $this->srcSQL->ResultArray();
+        foreach($ids as $id)
+            $max_forum_id = max($max_forum_id, $id['forum_id']);
+        $max_forum_id++;
+
         $this->srcSQL->Query("SELECT * FROM twsf_categories");
         $categories = $this->srcSQL->ResultArray();
-        foreach ($categories as $category)
+        foreach ($categories as $ind=>$category)
         {
+
             $this->destSQL->Query("INSERT INTO forums SET id=%%,parent_id=0,posi=%%,title=%%,alt_name=%%,
-            group_permission=0", $category['cat_id'],$category['cat_order'], ($category['cat_title']),
+            group_permission=0", $max_forum_id + $ind,$category['cat_order'], ($category['cat_title']),
                                   translit($category['cat_title']));
         }
 

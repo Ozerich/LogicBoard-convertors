@@ -14,22 +14,10 @@ class DLE_2_5 extends EngineBase
         "add_text" => array("Права групп перенесены будут не все. Пожалуйста, отредакртируйте их после конвертации в панели управления","После конвертации не забудьте очистить кеш форума, иначе новые форумы не появятся."),
     );
 
-    private function GetMemberId($name)
-    {
-        $this->srcSQL->Query("SELECT user_id FROM users WHERE name=%%", $name);
-        return $this->srcSQL->Result(0);
-    }
-
-    private function GetMemberName($id)
-    {
-        $this->srcSQL->Query("SELECT name FROM users WHERE user_id=%%", $id);
-        return $this->srcSQL->Result("Удалён");
-    }
-
     public function Convert($options)
     {
 
-        $user_topics = $user_posts = $user_rep = array();
+        $user_topics = $user_posts = $user_rep = $categories_id = array();
         $this->Start("Install");
         $this->InstallLB($options);
         $this->Finish();
@@ -53,14 +41,22 @@ class DLE_2_5 extends EngineBase
 
         $this->Start("Categories");
 
+        $max_forum_id = 0;
+        $this->srcSQL->Query("SELECT id FROM forum_forums");
+        $ids = $this->srcSQL->ResultArray();
+        foreach($ids as $id)
+            $max_forum_id = max($max_forum_id, $id['id']);
+        $max_forum_id++;
+
         $this->srcSQL->Query("SELECT * FROM forum_category ORDER by sid ASC");
         $result = $this->srcSQL->ResultArray();
-        foreach ($result as $item)
+        foreach ($result as $ind=>$item)
         {
+            $id = $max_forum_id + $ind;
             $postcount = isset($item['postcount']) ? $item['postcount'] : 1;
             $this->destSQL->Query("INSERT INTO forums SET id=%%,parent_id=0,title=%%,alt_name=%%,postcount=%%,posi=%%",
-                                  $item['id'], $item['cat_name'], translit($item['cat_name']), $postcount, $item['posi']);
-            ;
+                                  $id, $item['cat_name'], translit($item['cat_name']), $postcount, $item['posi']);
+            $categories_id[$item['id']] = $this->destSQL->InsertedId();
         }
         $this->Finish();
 
@@ -153,7 +149,7 @@ class DLE_2_5 extends EngineBase
             if (!$result) break;
             foreach ($result as $item)
             {
-                $parent_id = $item['parentid'] != 0 ? $item['parentid'] : $item['main_id'];
+                $parent_id = $item['parentid'] != 0 ? $item['parentid'] : $categories_id[$item['main_id']];
                 $forum_id = $item['id'];
                 $this->destSQL->Query("UPDATE forums SET parent_id=%% WHERE id=%%", $parent_id, $forum_id);
             }

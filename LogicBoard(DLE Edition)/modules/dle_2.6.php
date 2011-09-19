@@ -15,18 +15,6 @@ class DLE_2_6 extends EngineBase
 
     );
 
-    private function GetMemberId($name)
-    {
-        $this->srcSQL->Query("SELECT user_id FROM users WHERE name=%%", $name);
-        return $this->srcSQL->Result(0);
-    }
-
-    private function GetMemberName($id)
-    {
-        $this->srcSQL->Query("SELECT name FROM users WHERE user_id=%%", $id);
-        return $this->srcSQL->Result("Удалён");
-    }
-
     public function Convert($options)
     {
        $user_topics = $user_posts = $user_rep = array();
@@ -56,8 +44,9 @@ class DLE_2_6 extends EngineBase
 
         $this->srcSQL->Query("SELECT * FROM forum_forums WHERE is_category = '1' ORDER by id ASC");
         $result = $this->srcSQL->ResultArray();
-        foreach ($result as $item)
+        foreach ($result as $ind=>$item)
         {
+
             $alt_name = ($item['alt_name'] == "") ? translit($item['alt_name']) : $item['alt_name'];
             $postcount = (isset($item['postcount'])) ? $item['postcount'] : 1;
             $this->destSQL->Query("INSERT INTO forums SET id=%%,parent_id='0', title=%%, alt_name=%%, postcount=%%, posi=%%",

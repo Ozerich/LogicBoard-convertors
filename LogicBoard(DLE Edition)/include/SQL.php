@@ -83,7 +83,9 @@ class SQL
         $query = call_user_func_array("sprintf", $args);
         $query = str_replace("@$!^@!@$", "%", $query);
         if($query == "")return;
-        $this->query_handle = mysql_query($query, $this->sql_handle) or die("SQL Query Error: ".mysql_error($this->sql_handle));
+
+       // print_r($query."<br>");
+        $this->query_handle = mysql_query($query, $this->sql_handle) or die("SQL Query Error: ".mysql_error($this->sql_handle)."<br>".$query); 
     }
 
     public function Result($default = "")
@@ -92,11 +94,11 @@ class SQL
         return $result == FALSE ? $default : $result;
     }
 
-    public function ResultArray()
+    public function ResultArray($first = false)
     {
         $result = array();
         for(;$row = mysql_fetch_assoc($this->query_handle); $result[] = $row);
-        return $result;
+        return $first && $result ? $result[0] : $result;
     }
 
     public function Connect($host, $login, $password)

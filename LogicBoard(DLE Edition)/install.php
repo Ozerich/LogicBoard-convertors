@@ -72,7 +72,7 @@ $install_db[] = "CREATE TABLE ".$table_prefix."forums (
 `password` varchar(40) NOT NULL default '',
 `password_notuse` varchar(255) NOT NULL default '',
 `group_permission` text,
-`sort_order` varchar(40) NOT NULL default '',
+`sort_order` varchar(40) NOT NULL default 'DESC',
 `rules` text,
 `meta_desc` text,
 `meta_key` text,
@@ -362,12 +362,12 @@ $install_db[] = "CREATE INDEX lb_b_day ON `".$dle_prefix."users` (lb_b_day);";
 $install_db[] = "CREATE INDEX lb_b_month ON `".$dle_prefix."users` (lb_b_month);";
 $install_db[] = "CREATE INDEX lb_b_year ON `".$dle_prefix."users` (lb_b_year);";
 
-$install_db[] = "ALTER TABLE ".LB_DB_PREFIX."_members_ranks ADD mid mediumint(8) NOT NULL default '0'";
-$install_db[] = "ALTER TABLE ".LB_DB_PREFIX."_forums ADD allow_bbcode_list varchar(100) NOT NULL default '' AFTER `allow_bbcode`";
-$install_db[] = "ALTER TABLE ".LB_DB_PREFIX."_forums ADD ficon varchar(255) NOT NULL default '' AFTER `id`";
-$install_db[] = "ALTER TABLE ".LB_DB_PREFIX."_topics ADD post_fixed smallint(5) NOT NULL default '0' AFTER `post_hiden`";
-$install_db[] = "ALTER TABLE ".LB_DB_PREFIX."_posts ADD utility smallint(5) NOT NULL default '0'";
-$install_db[] = "ALTER TABLE ".LB_DB_PREFIX."_forums_notice ADD show_sub tinyint(1) NOT NULL default '0'";
+$install_db[] = "ALTER TABLE ".$table_prefix."members_ranks ADD mid mediumint(8) NOT NULL default '0'";
+$install_db[] = "ALTER TABLE ".$table_prefix."forums ADD allow_bbcode_list varchar(100) NOT NULL default '' AFTER `allow_bbcode`";
+$install_db[] = "ALTER TABLE ".$table_prefix."forums ADD ficon varchar(255) NOT NULL default '' AFTER `id`";
+$install_db[] = "ALTER TABLE ".$table_prefix."topics ADD post_fixed smallint(5) NOT NULL default '0' AFTER `post_hiden`";
+$install_db[] = "ALTER TABLE ".$table_prefix."posts ADD utility smallint(5) NOT NULL default '0'";
+$install_db[] = "ALTER TABLE ".$table_prefix."forums_notice ADD show_sub tinyint(1) NOT NULL default '0'";
 
 if(in_array("rep_mod", $options))
 {

@@ -61,21 +61,7 @@ class phpBB_3_0_9 extends EngineBase
         "dle_based" => false,
     );
 
-
-    private function GetMemberId($name)
-    {
-        $this->dleSQL->Query("SELECT user_id FROM users WHERE name=%%", $name);
-        return $this->dleSQL->Result(0);
-    }
-
-    private function GetMemberName($id)
-    {
-        if($id == 0)return "";
-        $this->dleSQL->Query("SELECT name FROM users WHERE user_id=%%", $id);
-        return $this->dleSQL->Result(iconv("UTF-8", "Windows-1251", "Удалён"));
-    }
-
-    public function convert($options)
+    public function Convert($options)
     {
 
         $this->Start("Install");

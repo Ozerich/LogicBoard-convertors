@@ -169,7 +169,7 @@
 <?php
 
 set_time_limit(0);
-ini_set('memory_limit', '1024M');
+ini_set('memory_limit', '2048M');
 ini_set('display_errors',1);
 
 
@@ -178,6 +178,7 @@ require_once "modules/dle_2.6.php";
 require_once "modules/phpbb_3.0.9.php";
 require_once "modules/ipb_3_1_4.php";
 require_once "modules/lb_2.0.php";
+require_once "modules/vb_3_6.php";
 require_once "modules/twsf.php";
 
 $engines = array(new DLE_2_5(), new DLE_2_6(), new TWSF(), new IPB_3_1_4(), new LB_2_0(), new phpBB_3_0_9(), new VB_3_6);
@@ -212,7 +213,7 @@ if(isset($_POST['convert_submit']))
         $options[] = "rep_mod";
     if(isset($_POST['admin_name']))
         $options['admin_name'] = $_POST['admin_name'];
-
+    $engine->OnStart();
     $engine->Convert($options);
     $engine->OnFinish();
 }

@@ -7,8 +7,9 @@ function fetch_array($sql_result)
 }
 
 
-function translit($str, $utf=true)
+function translit($str)
 {
+    $str = iconv("Windows-1251", "UTF-8//IGNORE", $str);
     $tr = array(
         "А" => "A", "Б" => "B", "В" => "V", "Г" => "G",
         "Д" => "D", "Е" => "E", "Ж" => "J", "З" => "Z", "И" => "I",
@@ -24,13 +25,7 @@ function translit($str, $utf=true)
         "ц" => "ts", "ч" => "ch", "ш" => "sh", "щ" => "sch", "ъ" => "y",
         "ы" => "yi", "ь" => "", "э" => "e", "ю" => "yu", "я" => "ya"
     );
-        if(!$utf){
-    $trr = array();
 
-        foreach($tr as $rus => $eng)
-            $trr[iconv("UTF-8", "Windows-1251", $rus)] = $eng;
-    $tr = $trr;
-}
     return str_replace(" ", "-", strtr($str, $tr));
 }
 

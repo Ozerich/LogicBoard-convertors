@@ -22,7 +22,7 @@ class VB_3_6 extends EngineBase
 
         $this->Start("Install");
         $this->InstallLB($options);
-        $this->Finish();*/
+        $this->Finish();
 
         $this->Start("Groups");
 

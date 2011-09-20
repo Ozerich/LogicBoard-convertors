@@ -56,7 +56,7 @@ class DLE_2_5 extends EngineBase
             $postcount = isset($item['postcount']) ? $item['postcount'] : 1;
             $this->destSQL->Query("INSERT INTO forums SET id=%%,parent_id=0,title=%%,alt_name=%%,postcount=%%,posi=%%",
                                   $id, $item['cat_name'], translit($item['cat_name']), $postcount, $item['posi']);
-            $categories_id[$item['id']] = $this->destSQL->InsertedId();
+            $categories_id[$item['sid']] = $this->destSQL->InsertedId();
         }
         $this->Finish();
 
@@ -141,7 +141,6 @@ class DLE_2_5 extends EngineBase
         }
 
         $this->srcSQL->ResetLimit();
-
         while (true)
         {
             $this->srcSQL->LimitQuery("SELECT * FROM forum_forums ORDER by id ASC");

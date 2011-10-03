@@ -1,4 +1,5 @@
 <?
+ini_set("upload_max_filesize", "200M");
 $title = "Конвертор LogicBoard 2.1";
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -34,7 +35,7 @@ $title = "Конвертор LogicBoard 2.1";
         #page {
             margin: auto;
             display: block;
-            width: 570px;
+            width: 650px;
             overflow: hidden;
         }
 

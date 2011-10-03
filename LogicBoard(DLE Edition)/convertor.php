@@ -31,7 +31,7 @@
         #page {
             margin: auto;
             display: block;
-            width: 570px;
+            width: 650px;
             overflow: hidden;
         }
 
